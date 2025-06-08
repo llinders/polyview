@@ -1,11 +1,11 @@
 from langchain_core.messages import HumanMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_tavily import TavilySearch
 from langgraph.constants import END
 from langgraph.prebuilt import create_react_agent
-from langgraph.prebuilt.chat_agent_executor import AgentState
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.types import Command
-from langchain_google_genai import ChatGoogleGenerativeAI
 
+from core.state import State
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash",
@@ -14,11 +14,11 @@ llm = ChatGoogleGenerativeAI(
     timeout=None,
     max_retries=2,
 )
-tavily_tool = TavilySearchResults(max_results=5)
+search_tool = TavilySearch(max_results=5)
 
-search_agent = create_react_agent(llm, tools=[tavily_tool])
+search_agent = create_react_agent(llm, tools=[search_tool])
 
-def search_node(state: AgentState) -> Command:
+def search_node(state: State) -> Command:
     result = search_agent.invoke(state)
     return Command(
         update={
@@ -28,3 +28,12 @@ def search_node(state: AgentState) -> Command:
         },
         goto=END
     )
+
+
+def search_node_test():
+    state = {
+        "messages": [HumanMessage(content="Explain the current state of climate change debates.")],
+        "search_queries": ["Test search query"],
+    }
+    result = search_agent.invoke(state)
+    return result["messages"][-1].content
