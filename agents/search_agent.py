@@ -5,15 +5,10 @@ from langgraph.constants import END
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
 
+from core.llm_config import llm
 from core.state import State
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-)
+
 search_tool = TavilySearch(max_results=5)
 
 search_agent = create_react_agent(llm, tools=[search_tool])
