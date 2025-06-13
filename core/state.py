@@ -10,3 +10,5 @@ class State(TypedDict):
     search_queries: List[str]
     raw_articles: List[dict]
     iteration: int
+    identified_perspectives: List[dict]
+    missing_perspectives: List[dict]
