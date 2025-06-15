@@ -7,3 +7,11 @@ llm = ChatGoogleGenerativeAI(
     timeout=None,
     max_retries=2,
 )
+
+llm_lite = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash-lite",
+    temperature=0.3,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2
+)

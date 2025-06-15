@@ -1,5 +1,5 @@
-from core.llm_config import llm
-from core.state import State
+from src.core.llm_config import llm
+from src.core.state import State
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 

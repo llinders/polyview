@@ -1,1 +1,5 @@
+# Environment files
 .env
+
+# LangGraph & LangChain
+.langgraph_api/
