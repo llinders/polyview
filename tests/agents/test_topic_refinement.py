@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage
 
-from src.agents.topic_refinement import topic_refinement_agent
+from tasks.topic_refinement import topic_refinement_agent
 from src.core.state import State
 
 

@@ -3,7 +3,7 @@ import json
 from langgraph.constants import END
 from langgraph.graph import StateGraph
 
-from src.agents.perspective_identification import perspective_identification_node
+from tasks.perspective_identification import perspective_identification_node
 from src.agents.search_agent import run_search_agent
 from src.core.state import State
 
