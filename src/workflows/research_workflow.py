@@ -1,9 +1,10 @@
 from typing import Literal
+
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph
 
 from src.core.state import State
-
+from tasks.summarize import summarize_node
 
 MAX_ITERATIONS = 2
 MIN_ARTICLES_TO_SUMMARIZE = 3
@@ -40,7 +41,7 @@ def research_supervisor_node(state: State) -> dict:
     }
 
 
-def decide_what_to_do(state: State) -> Literal["query_generation", "summarize"]:
+def decide_what_to_do(state: State) -> Literal["search_agent", "summarize"]:
     """
     Decision point for the graph.
 
@@ -70,9 +71,17 @@ def decide_what_to_do(state: State) -> Literal["query_generation", "summarize"]:
             return "summarize"
 
     print("Decision: More data or perspectives needed. Continuing research.")
-    return "query_generation"
+    return "search_agent"
 
 
-research_supervisor_workflow = StateGraph(State)
-research_supervisor_workflow.add_node("supervisor", research_supervisor_node)
+workflow = StateGraph(State)
+workflow.add_node("supervisor", research_supervisor_node)
+workflow.add_node("summarize", summarize_node)
+workflow.add_conditional_edges(
+    "supervisor",
+    decide_what_to_do
+)
+workflow.set_entry_point("supervisor")
+workflow.set_finish_point("summarize")
 
+graph = workflow.compile()

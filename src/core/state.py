@@ -12,3 +12,4 @@ class State(TypedDict):
     iteration: int
     identified_perspectives: List[dict]
     missing_perspectives: List[dict]
+    summary: str
