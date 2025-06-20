@@ -1,0 +1,7 @@
+{
+  "dependencies": ["./src/agents", "./src/tasks"],
+  "graphs": {
+    "search_and_perspective_identification": "./src/workflows/search_and_perspective_identification.py:graph"
+  },
+  "env": ".env"
+}
