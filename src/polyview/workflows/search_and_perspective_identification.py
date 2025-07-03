@@ -3,9 +3,9 @@ import json
 from langgraph.constants import END
 from langgraph.graph import StateGraph
 
-from src.tasks.perspective_identification import perspective_identification_node
-from src.agents.search_agent import run_search_agent
-from src.core.state import State
+from polyview.tasks.perspective_identification import perspective_identification_node
+from polyview.agents.search_agent import run_search_agent
+from polyview.core.state import State
 
 
 def print_state_node(state: State):

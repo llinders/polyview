@@ -3,3 +3,31 @@
 
 # LangGraph & LangChain
 .langgraph_api/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PEP build files
+build/
+dist/
+*.egg-info/
+*.egg/
+*.eggs/
+
+# Editable installs (pip install -e)
+*.egg-link
+.pip-wheel-metadata/
+
+# IDEA
+/.idea
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+.Spotlight-V100
+.Trashes

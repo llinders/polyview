@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage
 
-from tasks.topic_refinement import topic_refinement_agent
-from src.core.state import State
+from polyview.tasks import topic_refinement_agent
+from polyview import State
 
 
 def test_refine_clear_topic():

@@ -3,9 +3,9 @@ from typing import Literal
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph
 
-from src.agents.search_agent import run_search_agent
-from src.core.state import State
-from src.tasks.summarize import summarize_node
+from polyview.agents.search_agent import run_search_agent
+from polyview.core.state import State
+from polyview.tasks.summarize import summarize_node
 
 MAX_ITERATIONS = 2
 MIN_ARTICLES_TO_SUMMARIZE = 3

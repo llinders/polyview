@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 from langgraph.types import Command
-from src.agents.search_agent import search_node
+from polyview import search_node
 
 
 @patch("agents.search_agent.search_agent")

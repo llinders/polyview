@@ -1,4 +1,4 @@
-from workflows.search_and_perspective_identification import graph
+from polyview.workflows.search_and_perspective_identification import graph
 
 if __name__ == "__main__":
 

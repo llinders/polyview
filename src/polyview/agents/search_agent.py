@@ -6,8 +6,8 @@ from langchain_tavily import TavilySearch
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
-from src.core.llm_config import llm
-from src.core.state import State
+from polyview.core.llm_config import llm
+from polyview.core.state import State
 
 
 class Article(BaseModel):

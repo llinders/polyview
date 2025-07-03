@@ -1,0 +1,24 @@
+[project]
+name = "polyview"
+version = "0.1.0"
+description = "A multi-perspective news analysis assistant."
+requires-python = ">=3.12"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "langchain-core~=0.3.58",
+    "langgraph~=0.4.8",
+    "langchain-community~=0.3.12",
+    "langchain-google-genai~=2.1.5",
+    "langchain-tavily~=0.2.5",
+    "python-dotenv~=1.1.0",
+    "pydantic~=2.10.3",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

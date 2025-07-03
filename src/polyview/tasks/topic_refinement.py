@@ -1,8 +1,8 @@
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from src.core.llm_config import llm
-from src.core.state import State
+from polyview.core.llm_config import llm
+from polyview.core.state import State
 
 TOPIC_REFINEMENT_PROMPT = ChatPromptTemplate.from_messages(
     [
