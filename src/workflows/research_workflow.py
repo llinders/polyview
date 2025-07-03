@@ -3,8 +3,9 @@ from typing import Literal
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph
 
+from src.agents.search_agent import run_search_agent
 from src.core.state import State
-from tasks.summarize import summarize_node
+from src.tasks.summarize import summarize_node
 
 MAX_ITERATIONS = 2
 MIN_ARTICLES_TO_SUMMARIZE = 3
@@ -77,6 +78,7 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "summarize"]:
 workflow = StateGraph(State)
 workflow.add_node("supervisor", research_supervisor_node)
 workflow.add_node("summarize", summarize_node)
+workflow.add_node("search_agent", run_search_agent)
 workflow.add_conditional_edges(
     "supervisor",
     decide_what_to_do

@@ -1,5 +1,5 @@
 {
-  "dependencies": ["./agents", "./tasks"],
+  "dependencies": ["./src/agents", "./src/tasks", "./src/workflows"],
   "graphs": {
     "search_and_perspective_identification": "./src/workflows/search_and_perspective_identification.py:graph",
     "research_supervisor": "./src/workflows/research_workflow.py:graph"
