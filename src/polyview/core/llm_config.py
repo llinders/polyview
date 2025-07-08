@@ -1,7 +1,7 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     temperature=0,
     max_tokens=None,
     timeout=None,
@@ -9,7 +9,7 @@ llm = ChatGoogleGenerativeAI(
 )
 
 llm_lite = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-lite",
+    model="gemini-2.5-flash-lite-preview-06-17",
     temperature=0.3,
     max_tokens=None,
     timeout=None,
