@@ -27,6 +27,8 @@ llm_with_tools = llm.bind_tools([search_tool])
 def agent_node(state: State):
     """The decision point of the agent. It decides whether to call a tool or finish."""
     result = llm_with_tools.invoke(state["messages"])
+    print("debug for messages in state")
+    print(state["messages"])
     return {"messages": [result]}
 
 def tool_node(state: State):
@@ -85,14 +87,24 @@ search_agent_graph = search_workflow.compile()
 def run_search_agent(state: State) -> dict:
     """Main entry point of the sub-graph. This function will be called from the main graph."""
     print("--- Main Workflow: Invoking Search Sub-Graph ---")
-    mission = (
-        f"Your mission is to conduct a comprehensive search on the topic: '{state['topic']}'. "
-        f"Your goal is to gather a diverse set of high-quality articles that represent different perspectives. "
-        f"Analyze the results from your initial searches. If they are one-sided, formulate and execute new queries to find contrasting or missing viewpoints. "
-        f"When you are finished, summarize your findings and list the articles you used."
-    )
+
+    system_prompt = """You are a highly efficient search specialist. Your sole purpose is to find relevant articles for a given topic. Do not perform any analysis.
+
+Your workflow is fast and iterative:
+1.  **Initial Queries:** Start with about 3 broad search queries to quickly gather initial articles. For news topics, first find out the basic "what happened."
+2.  **Quick Scan:** Briefly scan the search results (titles, snippets) to see if you've captured different viewpoints. Do not read the full articles.
+3.  **Refine if Necessary:** If the initial results seem one-sided or miss an obvious angle, run 1-2 more highly targeted queries to find contrasting articles.
+4.  **Conclude Quickly:** Your task is to compile a list of article URLs. As soon as you have a reasonably diverse set of sources, conclude with the message "end".
+"""
     
-    search_input = {"messages": [HumanMessage(content=mission)]}
+    prompt_template = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("human", "Please begin your research on the topic: '{topic}'"),
+    ])
+    
+    messages = prompt_template.format_messages(topic=state['topic'])
+
+    search_input = {"messages": messages}
     result_state = search_agent_graph.invoke(search_input)
 
     return {
