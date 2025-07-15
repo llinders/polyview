@@ -5,6 +5,7 @@ from langgraph.graph import StateGraph
 
 from polyview.agents.search_agent import run_search_agent
 from polyview.core.state import State
+from polyview.tasks.perspective_identification import perspective_identification
 from polyview.tasks.summarize import summarize_node
 
 MAX_ITERATIONS = 2
@@ -74,16 +75,19 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "summarize"]:
     print("Decision: More data or perspectives needed. Continuing research.")
     return "search_agent"
 
-
 workflow = StateGraph(State)
 workflow.add_node("supervisor", research_supervisor_node)
 workflow.add_node("summarize", summarize_node)
 workflow.add_node("search_agent", run_search_agent)
+workflow.add_node("perspective_identification", perspective_identification)
+
+workflow.set_entry_point("supervisor")
 workflow.add_conditional_edges(
     "supervisor",
     decide_what_to_do
 )
-workflow.set_entry_point("supervisor")
+workflow.add_edge("search_agent", "perspective_identification")
+workflow.add_edge("perspective_identification", "supervisor")
 workflow.set_finish_point("summarize")
 
 graph = workflow.compile()
