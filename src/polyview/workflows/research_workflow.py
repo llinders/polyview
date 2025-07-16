@@ -24,10 +24,9 @@ def research_supervisor_node(state: State) -> dict:
     iteration = state.get("iteration", 0)
 
     if iteration == 0:
-        messages = state.get("messages", [])
-        if not messages:
-            raise ValueError("State has no messages to extract a topic from.")
-        topic = messages[-1].content
+        topic = state.get("topic", "")
+        if not topic:
+            raise ValueError("State has no set topic.")
         print(f"Initializing with topic: '{topic}'")
         return {
             "topic": topic,
@@ -74,6 +73,7 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "summarize"]:
 
     print("Decision: More data or perspectives needed. Continuing research.")
     return "search_agent"
+
 
 workflow = StateGraph(State)
 workflow.add_node("supervisor", research_supervisor_node)
