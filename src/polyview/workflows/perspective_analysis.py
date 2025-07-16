@@ -14,6 +14,7 @@ def print_state_node(state: State):
     print(json.dumps(printable_state, indent=2, default=str))
     return state
 
+
 workflow = StateGraph(State)
 
 ## First run
@@ -34,5 +35,11 @@ workflow.set_entry_point("search_agent")
 workflow.add_edge("search_agent", "perspective_identification")
 workflow.add_edge("perspective_identification", "debug_print")
 workflow.set_finish_point("debug_print")
+# TODO: add perspective clustering so that perspectives are grouped after individual identification
+#  and add perspective elaboration, where all core arguments are summarized and a perspective is synthesized
+
+# TODO: for runs where iteration>1 first identify perspectives for each article as before, but when clustering
+#  check if they can be clustered into existing perspectives. After, check during
+#  perspective elaboration if new arguments are present for resynthesis of the final perspective
 
 graph = workflow.compile()

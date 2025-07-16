@@ -13,16 +13,23 @@ class RawArticle(BaseModel):
 
 class ExtractedPerspective(BaseModel):
     """Represents a single perspective found within an article."""
-    source_article_id: int
     perspective_summary: str
     key_arguments: List[str]
 
+class ArticlePerspectives(BaseModel):
+    """A collection of extracted perspectives for a single article."""
+    source_article_id: int
+    perspectives: List[ExtractedPerspective]
+
 class ConsolidatedPerspective(BaseModel):
-    """Represents a final, clustered perspective with aggregated arguments."""
+    """Represents a final, clustered perspective with aggregated arguments of all articles."""
     arguments: List[str]
 
 class FinalPerspective(BaseModel):
-    """The final, detailed analysis of a single perspective."""
+    """
+    The final, detailed analysis of a single perspective about the topic.
+    This perspective is synthesized based on the aggregated arguments for the consolidated perspectives.
+    """
     narrative: str
     core_arguments: List[str]
     common_assumptions: List[str]

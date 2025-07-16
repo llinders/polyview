@@ -1,9 +1,7 @@
-from typing import List
-
 from langchain_core.prompts import ChatPromptTemplate
 
 from polyview.core.llm_config import llm
-from polyview.core.state import State, ExtractedPerspective
+from polyview.core.state import State, ArticlePerspectives
 
 
 def perspective_identification(state: State) -> dict:
@@ -38,7 +36,7 @@ def perspective_identification(state: State) -> dict:
         ]
     )
 
-    structured_llm = llm.with_structured_output(List[ExtractedPerspective])
+    structured_llm = llm.with_structured_output(ArticlePerspectives)
 
     chain = prompt | structured_llm
 
