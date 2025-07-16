@@ -1,5 +1,5 @@
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 from polyview.core.llm_config import llm
 from polyview.core.state import State
@@ -10,7 +10,7 @@ def summarize_node(state: State):
     Summarizes content into a neutral and balanced text for the user to read,
     based on different perspectives and core arguments
     """
-    prompt_template = PromptTemplate.from_messages(
+    prompt_template = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
@@ -50,6 +50,7 @@ def summarize_node(state: State):
                   - Label or identifier
                   - Core argument(s)
                   - Supporting rationale, if provided
+                  - It's strengths and weaknesses
     
                   Summary:"""
             ),
