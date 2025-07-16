@@ -1,3 +1,4 @@
+import hashlib
 from typing import List, Literal
 
 from langchain_core.messages import HumanMessage, ToolMessage
@@ -53,7 +54,10 @@ def formatter_node(state: State):
     structured_result = formatting_chain.invoke({"text_to_format": unstructured_output})
 
     unique_articles = {article.url: article for article in structured_result.articles}
-    final_articles_as_dicts = [article.dict() for article in unique_articles.values()]
+    final_articles_as_dicts = [
+        {**article.dict(), "id": hashlib.sha256(article.url.encode()).hexdigest()}
+        for article in unique_articles.values()
+    ]
     
     # We also pass the final summary message to the state if needed elsewhere.
     final_summary_message = HumanMessage(content=f"Search summary: {structured_result.summary}")
