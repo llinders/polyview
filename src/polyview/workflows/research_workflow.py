@@ -42,7 +42,7 @@ def research_supervisor_node(state: State) -> dict:
     }
 
 
-def decide_what_to_do(state: State) -> Literal["search_agent", "summarize"]:
+def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
     """
     Decision point for the graph.
 
@@ -60,16 +60,16 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "summarize"]:
     print("-------------------------")
 
     if iteration >= MAX_ITERATIONS:
-        print("Decision: Max iterations reached. Proceeding to summary.")
-        return "summarize"
+        print("Decision: Max iterations reached. Continuing.")
+        return "debug_state"
 
     if iteration > 0:
         has_enough_articles = len(raw_articles) >= MIN_ARTICLES_TO_SUMMARIZE
         has_enough_perspectives = len(perspectives) >= MIN_PERSPECTIVES_TO_SUMMARIZE
 
         if has_enough_articles and has_enough_perspectives:
-            print("Decision: Sufficient articles and perspectives found. Proceeding to summary.")
-            return "summarize"
+            print("Decision: Sufficient articles and perspectives found. Continuing.")
+            return "debug_state"
 
     print("Decision: More data or perspectives needed. Continuing research.")
     return "search_agent"
