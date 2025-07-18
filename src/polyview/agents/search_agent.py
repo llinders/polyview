@@ -60,7 +60,7 @@ def formatter_node(state: State):
     ]
     
     # We also pass the final summary message to the state if needed elsewhere.
-    final_summary_message = HumanMessage(content=f"Search summary: {structured_result.summary}")
+    final_summary_message = HumanMessage(content=f"Search summary: {structured_result.perspective_name}")
 
     return {"raw_articles": final_articles_as_dicts, "messages": [final_summary_message]}
 

@@ -34,9 +34,9 @@ def _format_perspectives_for_prompt(all_perspectives: List[ExtractedPerspective]
         for i, p in enumerate(all_perspectives)
     ]
 
-def _process_clustering_result(result: ClusteringResult, all_perspectives: List[ExtractedPerspective]) -> Dict[str, ConsolidatedPerspective]:
+def _process_clustering_result(result: ClusteringResult, all_perspectives: List[ExtractedPerspective]) -> List[ConsolidatedPerspective]:
     """Processes the clustering result to consolidate arguments for each cluster."""
-    consolidated_perspectives: Dict[str, ConsolidatedPerspective] = {}
+    consolidated_perspectives: List[ConsolidatedPerspective] = []
     for cluster in result.clusters:
         cluster_name = cluster.cluster_name
         all_arguments = []
@@ -45,11 +45,11 @@ def _process_clustering_result(result: ClusteringResult, all_perspectives: List[
                 all_arguments.extend(all_perspectives[index].key_arguments)
 
         unique_arguments = list(dict.fromkeys(all_arguments))
-        consolidated_perspectives[cluster_name] = ConsolidatedPerspective(arguments=unique_arguments)
+        consolidated_perspectives.append(ConsolidatedPerspective(perspective_name=cluster_name, arguments=unique_arguments))
         print(f"  -> Created cluster '{cluster_name}' with {len(unique_arguments)} unique arguments.")
     return consolidated_perspectives
 
-def perspective_clustering_node(state: State) -> Dict[str, Dict[str, ConsolidatedPerspective]]:
+def perspective_clustering_node(state: State) -> List[ConsolidatedPerspective]:
     """
     Analyzes and clusters semantically similar perspectives into a consolidated view.
     """
@@ -87,13 +87,13 @@ The final output should be a list of these clusters.
 
     if not perspectives_by_article:
         print("No perspectives found to consolidate. Skipping clustering node..")
-        return {"consolidated_perspectives": {}}
+        return {"consolidated_perspectives": []}
 
     all_perspectives = _flatten_perspectives(perspectives_by_article)
 
     if not all_perspectives:
         print("No perspectives found to consolidate. Skipping clustering node..")
-        return {"consolidated_perspectives": {}}
+        return {"consolidated_perspectives": []}
 
     perspectives_for_prompt = _format_perspectives_for_prompt(all_perspectives)
 

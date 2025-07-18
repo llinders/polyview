@@ -86,23 +86,34 @@ def test_format_perspectives_for_prompt_with_data(sample_flattened_perspectives)
 
 # Test for _process_clustering_result
 def test_process_clustering_result(sample_clustering_result, sample_flattened_perspectives):
-    consolidated = _process_clustering_result(sample_clustering_result, sample_flattened_perspectives)
+    consolidated_list = _process_clustering_result(sample_clustering_result, sample_flattened_perspectives)
     
-    assert "Cluster A" in consolidated
-    assert "Cluster B" in consolidated
-    assert isinstance(consolidated["Cluster A"], ConsolidatedPerspective)
-    assert isinstance(consolidated["Cluster B"], ConsolidatedPerspective)
+    assert isinstance(consolidated_list, list)
+    assert len(consolidated_list) == 2
 
-    # Check arguments for Cluster A (Summary 1A and Summary 2A)
-    # Arg 1A.1 should appear once, Arg 1A.2 once, Arg 2A.1 once, Arg 2A.2 once
-    assert sorted(consolidated["Cluster A"].arguments) == sorted(["Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"])
+    cluster_a_found = None
+    cluster_b_found = None
+    for cp in consolidated_list:
+        if cp.perspective_name == "Cluster A":
+            cluster_a_found = cp
+        elif cp.perspective_name == "Cluster B":
+            cluster_b_found = cp
 
-    # Check arguments for Cluster B (Summary 1B)
-    assert consolidated["Cluster B"].arguments == ["Arg 1B.1", "Arg 1B.2"]
+    assert cluster_a_found is not None
+    assert cluster_b_found is not None
+
+    assert isinstance(cluster_a_found, ConsolidatedPerspective)
+    assert isinstance(cluster_b_found, ConsolidatedPerspective)
+
+    # Check arguments for Cluster A
+    assert sorted(cluster_a_found.arguments) == sorted(["Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"])
+
+    # Check arguments for Cluster B
+    assert cluster_b_found.arguments == ["Arg 1B.1", "Arg 1B.2"]
 
 def test_process_clustering_result_empty_clusters():
     empty_result = ClusteringResult(clusters=[])
-    assert _process_clustering_result(empty_result, []) == {}
+    assert _process_clustering_result(empty_result, []) == []
 
 def test_process_clustering_result_invalid_index(sample_clustering_result, sample_flattened_perspectives):
     # Create a result with an invalid index
@@ -110,8 +121,15 @@ def test_process_clustering_result_invalid_index(sample_clustering_result, sampl
         cluster_name="Invalid Cluster",
         perspective_indices=[999] # Index out of bounds
     )
-    sample_clustering_result.clusters.append(invalid_cluster)
+    test_clustering_result = ClusteringResult(clusters=sample_clustering_result.clusters + [invalid_cluster])
 
-    consolidated = _process_clustering_result(sample_clustering_result, sample_flattened_perspectives)
-    assert "Invalid Cluster" in consolidated
-    assert consolidated["Invalid Cluster"].arguments == [] # Should be empty as index is invalid
+    consolidated_list = _process_clustering_result(test_clustering_result, sample_flattened_perspectives)
+    
+    invalid_cluster_found = None
+    for cp in consolidated_list:
+        if cp.perspective_name == "Invalid Cluster":
+            invalid_cluster_found = cp
+            break
+    
+    assert invalid_cluster_found is not None
+    assert invalid_cluster_found.arguments == [] # Should be empty as index is invalid

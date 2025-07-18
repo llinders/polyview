@@ -1,9 +1,11 @@
+import pytest
 from langchain_core.messages import HumanMessage
 
-from polyview.tasks import topic_refinement_agent
-from polyview import State
+from polyview.tasks.topic_refinement import topic_refinement_agent
+from polyview.core.state import State
 
 
+@pytest.mark.integration
 def test_refine_clear_topic():
     """Tests that a clear user request is refined into a research topic."""
     initial_state: State = {
@@ -16,6 +18,7 @@ def test_refine_clear_topic():
     assert "climate change" in result["topic"].lower()
 
 
+@pytest.mark.integration
 def test_clarify_greeting():
     """Tests that a simple greeting results in a request for clarification."""
     initial_state: State = {
@@ -25,6 +28,7 @@ def test_clarify_greeting():
     assert result["topic"] == "clarify"
 
 
+@pytest.mark.integration
 def test_clarify_ambiguous_request():
     """Tests that a vague or nonsensical request results in clarification."""
     initial_state: State = {
@@ -34,6 +38,7 @@ def test_clarify_ambiguous_request():
     assert result["topic"] == "clarify"
 
 
+@pytest.mark.integration
 def test_refine_complex_but_clear_topic():
     """Tests a more complex but still clear topic."""
     initial_state: State = {
