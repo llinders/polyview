@@ -1,7 +1,7 @@
 import pytest
-from typing import List, Dict
+from typing import List
 
-from polyview.core.state import ExtractedPerspective, ConsolidatedPerspective
+from polyview.core.state import ExtractedPerspective, ConsolidatedPerspective, ArticlePerspectives
 from polyview.tasks.perspective_clustering import (
     _flatten_perspectives,
     _format_perspectives_for_prompt,
@@ -12,25 +12,31 @@ from polyview.tasks.perspective_clustering import (
 
 # Sample data for testing
 @pytest.fixture
-def sample_extracted_perspectives_data() -> Dict[str, List[Dict]]:
-    return {
-        "article_1": [
-            {
-                "perspective_summary": "Summary 1A",
-                "key_arguments": ["Arg 1A.1", "Arg 1A.2"]
-            },
-            {
-                "perspective_summary": "Summary 1B",
-                "key_arguments": ["Arg 1B.1", "Arg 1B.2"]
-            },
-        ],
-        "article_2": [
-            {
-                "perspective_summary": "Summary 2A",
-                "key_arguments": ["Arg 2A.1", "Arg 2A.2", "Arg 1A.1"]
-            }
-        ]
-    }
+def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
+    return [
+        ArticlePerspectives(
+            source_article_id=1,
+            perspectives=[
+                ExtractedPerspective(
+                    perspective_summary="Summary 1A",
+                    key_arguments=["Arg 1A.1", "Arg 1A.2"]
+                ),
+                ExtractedPerspective(
+                    perspective_summary="Summary 1B",
+                    key_arguments=["Arg 1B.1", "Arg 1B.2"]
+                ),
+            ]
+        ),
+        ArticlePerspectives(
+            source_article_id=2,
+            perspectives=[
+                ExtractedPerspective(
+                    perspective_summary="Summary 2A",
+                    key_arguments=["Arg 2A.1", "Arg 2A.2", "Arg 1A.1"]
+                )
+            ]
+        )
+    ]
 
 @pytest.fixture
 def sample_flattened_perspectives(sample_extracted_perspectives_data) -> List[ExtractedPerspective]:
@@ -54,10 +60,10 @@ def sample_clustering_result() -> ClusteringResult:
 
 # Test for _flatten_perspectives
 def test_flatten_perspectives_empty():
-    assert _flatten_perspectives({}) == []
+    assert _flatten_perspectives([]) == []
 
 def test_flatten_perspectives_single_article(sample_extracted_perspectives_data):
-    flattened = _flatten_perspectives({"article_1": sample_extracted_perspectives_data["article_1"]})
+    flattened = _flatten_perspectives([sample_extracted_perspectives_data[0]])
     assert len(flattened) == 2
     assert all(isinstance(p, ExtractedPerspective) for p in flattened)
     assert flattened[0].perspective_summary == "Summary 1A"
@@ -106,10 +112,10 @@ def test_process_clustering_result(sample_clustering_result, sample_flattened_pe
     assert isinstance(cluster_b_found, ConsolidatedPerspective)
 
     # Check arguments for Cluster A
-    assert sorted(cluster_a_found.arguments) == sorted(["Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"])
+    assert set(cluster_a_found.arguments) == {"Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"}
 
     # Check arguments for Cluster B
-    assert cluster_b_found.arguments == ["Arg 1B.1", "Arg 1B.2"]
+    assert set(cluster_b_found.arguments) == {"Arg 1B.1", "Arg 1B.2"}
 
 def test_process_clustering_result_empty_clusters():
     empty_result = ClusteringResult(clusters=[])

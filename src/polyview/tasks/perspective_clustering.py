@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
-from polyview.core.state import State, ConsolidatedPerspective, ExtractedPerspective
+from polyview.core.state import State, ConsolidatedPerspective, ExtractedPerspective, ArticlePerspectives
 
 
 class PerspectiveCluster(BaseModel):
@@ -16,15 +16,19 @@ class ClusteringResult(BaseModel):
     """The result of clustering all perspectives."""
     clusters: List[PerspectiveCluster]
 
-def _flatten_perspectives(perspectives_by_article: Dict[str, List[Dict]]) -> List[ExtractedPerspective]:
-    """Flattens a dictionary of perspective lists into a single list of ExtractedPerspective objects."""
+def _flatten_perspectives(article_perspectives_list: List[ArticlePerspectives]) -> List[ExtractedPerspective]:
+    """
+    Flattens a list of ArticlePerspectives into a single list of ExtractedPerspective objects.
+    This function handles cases where the input list contains dictionaries instead of Pydantic objects.
+    """
     all_perspectives: List[ExtractedPerspective] = []
-    for article_id, perspective_list in perspectives_by_article.items():
-        for p_data in perspective_list:
-            if isinstance(p_data, dict):
-                all_perspectives.append(ExtractedPerspective(**p_data))
-            else:
-                all_perspectives.append(p_data)
+    # The data from the state can be a list of dicts, so we parse them into ArticlePerspectives objects.
+    for item in article_perspectives_list:
+        if isinstance(item, dict):
+            article_p = ArticlePerspectives.model_validate(item)
+        else:
+            article_p = item  # Assume it's already an ArticlePerspectives object
+        all_perspectives.extend(article_p.perspectives)
     return all_perspectives
 
 def _format_perspectives_for_prompt(all_perspectives: List[ExtractedPerspective]) -> List[Dict]:
@@ -49,7 +53,7 @@ def _process_clustering_result(result: ClusteringResult, all_perspectives: List[
         print(f"  -> Created cluster '{cluster_name}' with {len(unique_arguments)} unique arguments.")
     return consolidated_perspectives
 
-def perspective_clustering_node(state: State) -> List[ConsolidatedPerspective]:
+def perspective_clustering_node(state: State) -> dict:
     """
     Analyzes and clusters semantically similar perspectives into a consolidated view.
     """
@@ -83,13 +87,15 @@ The final output should be a list of these clusters.
     structured_llm = llm.with_structured_output(ClusteringResult)
     chain = prompt | structured_llm
 
-    perspectives_by_article = state.get("extracted_perspectives")
+    article_perspectives_list = state.get("extracted_perspectives")
+    print(f"extracted_perspectives: {article_perspectives_list}")
 
-    if not perspectives_by_article:
+    if not article_perspectives_list:
         print("No perspectives found to consolidate. Skipping clustering node..")
         return {"consolidated_perspectives": []}
 
-    all_perspectives = _flatten_perspectives(perspectives_by_article)
+    all_perspectives = _flatten_perspectives(article_perspectives_list)
+    print(f"all_perspectives: {all_perspectives}")
 
     if not all_perspectives:
         print("No perspectives found to consolidate. Skipping clustering node..")

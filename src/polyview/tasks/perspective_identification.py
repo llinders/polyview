@@ -1,8 +1,14 @@
+from typing import List
+
 from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
-from polyview.core.state import State, ArticlePerspectives
+from polyview.core.state import State, ExtractedPerspective, ArticlePerspectives
 
+
+class ExtractedPerspectives(BaseModel):
+    perspectives: List[ExtractedPerspective] = Field(description="A list of extracted perspectives.")
 
 def perspective_identification(state: State) -> dict:
     """
@@ -39,29 +45,42 @@ Keep each perspective distinct, even if they overlap. Be neutral, concise, and o
         ]
     )
 
-    structured_llm = llm.with_structured_output(ArticlePerspectives)
+    structured_llm = llm.with_structured_output(ExtractedPerspectives)
 
     chain = prompt | structured_llm
 
     articles_to_process = state.get("raw_articles")
     topic = state.get("topic")
     
-    perspectives_by_article = {}
+    all_extracted_perspectives: List[ArticlePerspectives] = []
 
     print(f"--- Identifying perspectives for {len(articles_to_process)} articles on topic: {topic} ---")
 
     for article in articles_to_process:
-        print(f"Processing article {article['id']}: {article['url']}")
+        article_id = article["id"]
+        print(f"Processing article {article_id}: {article["url"]}")
         try:
-            response = chain.invoke({
+            extracted_object = chain.invoke({
                 "topic": topic,
                 "article_text": article["content"]
             })
-            perspectives_by_article[article['id']] = response.perspectives
-            print(f"  -> Found {len(response.perspectives)} perspective(s).")
+
+            perspectives_list = extracted_object.perspectives
+
+            if not isinstance(perspectives_list, list):
+                print(f"  -> The 'perspectives' attribute is not a list... Response: {extracted_object}")
+                perspectives_list = []
+
+            article_perspectives = ArticlePerspectives(
+                source_article_id=article_id,
+                perspectives=perspectives_list,
+            )
+            all_extracted_perspectives.append(article_perspectives)
+            print(f"  -> Found {len(perspectives_list)} perspective(s).")
 
         except Exception as e:
-            print(f"  -> Error processing article {article['id']}: {e}")
-            perspectives_by_article[article['id']] = []
+            print(f"  -> Error processing article {article_id}: {e}")
+            all_extracted_perspectives.append(ArticlePerspectives(source_article_id=article_id, perspectives=[]))
 
-    return {"extracted_perspectives": perspectives_by_article}
+
+    return {"extracted_perspectives": all_extracted_perspectives}
