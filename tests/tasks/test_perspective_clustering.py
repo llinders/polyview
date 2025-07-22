@@ -1,5 +1,6 @@
-import pytest
 from typing import List
+
+import pytest
 
 from polyview.core.state import ExtractedPerspective, ConsolidatedPerspective, ArticlePerspectives
 from polyview.tasks.perspective_clustering import (
@@ -10,12 +11,13 @@ from polyview.tasks.perspective_clustering import (
     PerspectiveCluster
 )
 
+
 # Sample data for testing
 @pytest.fixture
 def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
     return [
         ArticlePerspectives(
-            source_article_id=1,
+            source_article_id='id1',
             perspectives=[
                 ExtractedPerspective(
                     perspective_summary="Summary 1A",
@@ -28,7 +30,7 @@ def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
             ]
         ),
         ArticlePerspectives(
-            source_article_id=2,
+            source_article_id='id2',
             perspectives=[
                 ExtractedPerspective(
                     perspective_summary="Summary 2A",
