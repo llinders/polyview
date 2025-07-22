@@ -10,6 +10,7 @@ from polyview.core.state import State, ExtractedPerspective, ArticlePerspectives
 class ExtractedPerspectives(BaseModel):
     perspectives: List[ExtractedPerspective] = Field(description="A list of extracted perspectives.")
 
+
 def perspective_identification(state: State) -> dict:
     """
     Identifies and extracts one or more perspectives from each article.
@@ -17,7 +18,7 @@ def perspective_identification(state: State) -> dict:
     This node iterates through each raw article, invoking an LLM with structured output
     to extract all discussed perspectives.
     """
-    #TODO: parallelize llm calls instead of looping
+    # TODO: parallelize llm calls instead of looping
 
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -46,12 +47,11 @@ Keep each perspective distinct, even if they overlap. Be neutral, concise, and o
     )
 
     structured_llm = llm.with_structured_output(ExtractedPerspectives)
-
     chain = prompt | structured_llm
 
     articles_to_process = state.get("raw_articles")
     topic = state.get("topic")
-    
+
     all_extracted_perspectives: List[ArticlePerspectives] = []
 
     print(f"--- Identifying perspectives for {len(articles_to_process)} articles on topic: {topic} ---")
@@ -80,7 +80,5 @@ Keep each perspective distinct, even if they overlap. Be neutral, concise, and o
 
         except Exception as e:
             print(f"  -> Error processing article {article_id}: {e}")
-            all_extracted_perspectives.append(ArticlePerspectives(source_article_id=article_id, perspectives=[]))
 
-
-    return {"extracted_perspectives": all_extracted_perspectives}
+    return {"article_perspectives": all_extracted_perspectives}

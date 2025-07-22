@@ -3,6 +3,7 @@
 
 # LangGraph & LangChain
 .langgraph_api/
+.benchmarks/
 
 # Python cache files
 __pycache__/
