@@ -119,6 +119,8 @@ Crucial Guidelines for Clustering:
     perspectives_for_prompt = _format_perspectives_for_prompt(all_perspectives)
 
     logger.info(f"--- Clustering {len(all_perspectives)} perspectives ---")
+    # TODO: if iteration is > 0, pass current clusters to llm so it can cluster new perspectives in those clusters or
+    #  decide to create new ones
     result = chain.invoke({"perspectives": perspectives_for_prompt})
     consolidated_perspectives = _process_clustering_result(result, all_perspectives)
 

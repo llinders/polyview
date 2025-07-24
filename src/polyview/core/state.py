@@ -62,7 +62,7 @@ class State(TypedDict):
     article_perspectives: List[ArticlePerspectives]
     consolidated_perspectives: List[ConsolidatedPerspective]
 
-    identified_perspectives: List[FinalPerspective]
+    final_perspectives: List[FinalPerspective]
     summary: str
 
     iteration: int
