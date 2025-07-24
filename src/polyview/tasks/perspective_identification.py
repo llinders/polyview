@@ -4,7 +4,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
+from polyview.core.logging import get_logger
 from polyview.core.state import State, ExtractedPerspective, ArticlePerspectives
+
+logger = get_logger(__name__)
 
 
 class ExtractedPerspectives(BaseModel):
@@ -54,11 +57,11 @@ Keep each perspective distinct, even if they overlap. Be neutral, concise, and o
 
     all_extracted_perspectives: List[ArticlePerspectives] = []
 
-    print(f"--- Identifying perspectives for {len(articles_to_process)} articles on topic: {topic} ---")
+    logger.info(f"--- Identifying perspectives for {len(articles_to_process)} articles on topic: {topic} ---")
 
     for article in articles_to_process:
         article_id = article["id"]
-        print(f"Processing article {article_id}: {article["url"]}")
+        logger.info(f"Processing article {article_id}: {article["url"]}")
         try:
             extracted_object = chain.invoke({
                 "topic": topic,
@@ -68,7 +71,7 @@ Keep each perspective distinct, even if they overlap. Be neutral, concise, and o
             perspectives_list = extracted_object.perspectives
 
             if not isinstance(perspectives_list, list):
-                print(f"  -> The 'perspectives' attribute is not a list... Response: {extracted_object}")
+                logger.warning(f"The 'perspectives' attribute is not a list. Response: {extracted_object}")
                 perspectives_list = []
 
             article_perspectives = ArticlePerspectives(
@@ -76,9 +79,9 @@ Keep each perspective distinct, even if they overlap. Be neutral, concise, and o
                 perspectives=perspectives_list,
             )
             all_extracted_perspectives.append(article_perspectives)
-            print(f"  -> Found {len(perspectives_list)} perspective(s).")
+            logger.info(f"Found {len(perspectives_list)} perspective(s).")
 
         except Exception as e:
-            print(f"  -> Error processing article {article_id}: {e}")
+            logger.error(f"Processing article {article_id} failed: {e}")
 
     return {"article_perspectives": all_extracted_perspectives}
