@@ -14,8 +14,6 @@ class FinalPerspectives(BaseModel):
     final_perspectives: List[FinalPerspective]
 
 
-# TODO: Ensure that the perspective synthesis node has all required information to complete final perspectives
-#  (strengths, weaknesses, assumptions, general narrative; for each per perspective)
 def perspective_synthesis_node(state: State) -> dict:
     """
     Synthesizes and de-duplicates arguments within each consolidated perspective for all perspectives at once.
@@ -37,28 +35,20 @@ def perspective_synthesis_node(state: State) -> dict:
         [
             (
                 "system",
-                """You are an expert at synthesizing and de-duplicating arguments across multiple perspectives.
-Your task is to review a list of perspectives, each with its own set of arguments. For each perspective, you must:
-1.  **Synthesize Arguments**: Merge any arguments that are semantically similar or redundant into a single, clear, and concise statement.
-2.  **Maintain Original Intent**: The synthesized arguments must accurately represent the original intent and meaning of the input arguments.
+                """You are an expert synthesizer and analyst. Your task is to transform a list of aggregated perspectives into a final, detailed analysis.
+For each perspective provided, you must perform the following steps:
 
-Example of argument synthesis (conceptual):
-Input Argument List for a perspective:
-  - "Nuclear power is a low-carbon energy source."
-  - "Nuclear energy is a powerful low-carbon energy source."
-  - "Produces large amounts of electricity without greenhouse gas emissions."
-  - "The land use is relatively little"
-  - "High energy density"
-Output Synthesized Argument:
-  - "Nuclear power is a low-carbon energy source with little greenhouse gas emissions."
-  - "The land use is minimal"
-  - "High energy density"
+1.  **Finalize the Narrative**: Review the `preliminary_synthesis` and the `aggregated_narratives`. Write a comprehensive and neutral final `narrative` that accurately captures the essence of the perspective.
+2.  **Synthesize Core Arguments**: Analyze the `aggregated_arguments`. Merge any that are semantically similar or redundant into a single, clear, and concise statement. This will become the `core_arguments`.
+3.  **Identify Common Assumptions**: Based on the narrative and arguments, identify the underlying `common_assumptions` of the perspective.
+4.  **Determine Strengths and Weaknesses**: Analyze the `core_arguments` and `supporting_evidence`. Identify the `strengths` (e.g., well-supported by evidence, logically consistent) and `weaknesses` (e.g., relies on unstated assumptions, lacks evidence for key claims) of the perspective.
 
+Your output must be a list of `FinalPerspective` objects, fully populated.
 """
             ),
             (
                 "human",
-                """Please synthesize arguments for the following perspectives:\n\n{perspectives_json}"""
+                """Please synthesize the following aggregated perspectives into a final analysis:\n\n{perspectives_json}"""
             ),
         ]
     )
@@ -67,14 +57,14 @@ Output Synthesized Argument:
     chain = prompt | structured_llm
 
     try:
-        final_perspectives: FinalPerspectives = chain.invoke({"perspectives_json": consolidated_perspectives})
+        final_perspectives_obj: FinalPerspectives = chain.invoke({"perspectives_json": consolidated_perspectives})
         logger.info(
-            f"Successfully synthesized arguments for {len(final_perspectives.final_perspectives)} perspectives.")
-        logger.debug(f"Final perspectives: {final_perspectives}")
+            f"Successfully synthesized arguments for {len(final_perspectives_obj.final_perspectives)} perspectives.")
+        logger.debug(f"Final perspectives: {final_perspectives_obj}")
 
     except Exception as e:
         logger.error(f"Error synthesizing arguments for all perspectives: {e}\n"
                      f"Using consolidated perspectives as backup")
-        return {"final_perspectives": consolidated_perspectives}
+        return {"final_perspectives": []}
 
-    return {"final_perspectives": final_perspectives}
+    return {"final_perspectives": final_perspectives_obj.final_perspectives}

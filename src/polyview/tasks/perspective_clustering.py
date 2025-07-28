@@ -58,15 +58,37 @@ def _process_clustering_result(result: ClusteringResult, all_perspectives: List[
     consolidated_perspectives: List[ConsolidatedPerspective] = []
     for cluster in result.clusters:
         cluster_name = cluster.cluster_name
-        all_arguments = []
+        aggregated_arguments = []
+        aggregated_narratives = []
+        supporting_evidence = []
+
         for index in cluster.perspective_indices:
             if 0 <= index < len(all_perspectives):
-                all_arguments.extend(all_perspectives[index].key_arguments)
+                perspective = all_perspectives[index]
+                aggregated_arguments.extend(perspective.key_arguments)
+                aggregated_narratives.append(perspective.contextual_narrative)
+                supporting_evidence.extend(perspective.evidence_provided)
 
-        unique_arguments = list(dict.fromkeys(all_arguments))
+        # Create a preliminary synthesis
+        synthesis_prompt = ChatPromptTemplate.from_template(
+            "Create a brief, synthesized narrative (1-2 paragraphs) from the following collected narratives for the perspective: '{cluster_name}'.\n\n---\n{narratives}\n---"
+        )
+        synthesis_chain = synthesis_prompt | llm
+        preliminary_synthesis = synthesis_chain.invoke({
+            "cluster_name": cluster_name,
+            "narratives": "\n\n".join(aggregated_narratives)
+        }).content
+
         consolidated_perspectives.append(
-            ConsolidatedPerspective(perspective_name=cluster_name, arguments=unique_arguments))
-        logger.info(f"Created cluster '{cluster_name}' with {len(unique_arguments)} unique arguments.")
+            ConsolidatedPerspective(
+                perspective_name=cluster_name,
+                aggregated_arguments=list(dict.fromkeys(aggregated_arguments)),
+                aggregated_narratives=aggregated_narratives,
+                supporting_evidence=list(dict.fromkeys(supporting_evidence)),
+                preliminary_synthesis=preliminary_synthesis
+            )
+        )
+        logger.info(f"Created cluster '{cluster_name}' with {len(aggregated_arguments)} arguments.")
     return consolidated_perspectives
 
 

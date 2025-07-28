@@ -14,9 +14,9 @@ workflow.add_node("perspective_clustering", perspective_clustering_node)
 workflow.add_node("perspective_synthesis", perspective_synthesis_node)
 workflow.add_node("debug_print", print_state_node)
 
-# workflow.set_entry_point("perspective_identification")
-# workflow.add_edge("perspective_identification", "perspective_clustering")
-# workflow.add_edge("perspective_clustering", "perspective_synthesis")
-workflow.set_entry_point("perspective_synthesis")
+workflow.set_entry_point("perspective_identification")
+workflow.add_edge("perspective_identification", "perspective_clustering")
+workflow.add_edge("perspective_clustering", "perspective_synthesis")
+workflow.set_finish_point("perspective_synthesis")
 
 graph = workflow.compile()

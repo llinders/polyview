@@ -27,24 +27,18 @@ def perspective_identification(state: State) -> dict:
         [
             (
                 "system",
-                """You are an expert analyst skilled in identifying and clustering distinct viewpoints in a text.
-Your task is to extract all clearly identifiable perspectives presented in the article about {topic}.
+                """You are an expert analyst skilled in identifying and deconstructing distinct viewpoints in a text.
+Your task is to extract all clearly identifiable perspectives from the article regarding the topic of **{topic}**.
 
-A perspective is any specific viewpoint, stance, or framing explicitly described or quoted in the article — whether from the author, sources, or referenced groups. Do not infer or invent perspectives; only use what is explicitly presented.
+A perspective is a specific viewpoint, stance, or framing. 
+For each one you find, you must populate the fields as provided in the 'ExtractedPerspectives' object.
 
-Example (for topic: universal basic income):
-Perspective summary: UBI reduces poverty and empowers citizens.
-Key arguments:
-  * Provides a financial safety net regardless of employment.
-  * Reduces bureaucracy compared to welfare systems.
-  * Helps people focus on education, caregiving, or entrepreneurship.
-
-Keep each perspective distinct, even if they overlap. Be neutral, concise, and only use what's in the text.
+Extract only what is explicitly presented or strongly implied in the text. Do not invent information. Keep each perspective distinct.
                 """
             ),
             (
                 "human",
-                "Please analyze the following article text:\n\n---\n{article_text}\n---"
+                "Analyze the following article text:\n\n---\n{article_text}\n---"
             ),
         ]
     )
