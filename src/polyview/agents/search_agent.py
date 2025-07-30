@@ -8,7 +8,10 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
+from polyview.core.logging import get_logger
 from polyview.core.state import State
+
+logger = get_logger(__name__)
 
 
 class Article(BaseModel):
@@ -27,14 +30,14 @@ llm_with_tools = llm.bind_tools([search_tool])
 
 def agent_node(state: State):
     """The decision point of the agent. It decides whether to call a tool or finish."""
+    logger.debug(f"Messages in state of search agent subgraph: {state["messages"]}")
     result = llm_with_tools.invoke(state["messages"])
-    print("debug for messages in state")
-    print(state["messages"])
     return {"messages": [result]}
 
 def tool_node(state: State):
     """Executes tool calls."""
     tool_calls = state["messages"][-1].tool_calls
+    logger.debug(f"Executing tool calls: {tool_calls}")
     tool_messages = []
     for tool_call in tool_calls:
         result = search_tool.invoke(tool_call["args"])
@@ -90,7 +93,7 @@ search_agent_graph = search_workflow.compile()
 
 def run_search_agent(state: State) -> dict:
     """Main entry point of the sub-graph. This function will be called from the main graph."""
-    print("--- Main Workflow: Invoking Search Sub-Graph ---")
+    logger.info("--- Main Workflow: Invoking Search Sub-Graph ---")
 
     system_prompt = """You are a highly efficient search specialist. Your sole purpose is to find relevant articles for a given topic. Do not perform any analysis.
 
@@ -109,6 +112,7 @@ Your workflow is fast and iterative:
     messages = prompt_template.format_messages(topic=state['topic'])
 
     search_input = {"messages": messages}
+    logger.debug(f"Invoking sub-graph with the following state: {search_input}")
     result_state = search_agent_graph.invoke(search_input)
 
     return {

@@ -2,7 +2,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from polyview.core.llm_config import llm
+from polyview.core.logging import get_logger
 from polyview.core.state import State
+
+logger = get_logger(__name__)
 
 
 def summarize_node(state: State):
@@ -69,5 +72,5 @@ def summarize_node(state: State):
 
     summary_result = chain.invoke({"perspectives": state.get("final_perspectives")})
 
-    print(summary_result)
+    logger.info(f"Summary result: {summary_result}")
     return {"summary": summary_result}
