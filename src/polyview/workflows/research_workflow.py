@@ -4,9 +4,12 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph
 
 from polyview.agents.search_agent import run_search_agent
+from polyview.core.logging import get_logger
 from polyview.core.state import State
 from polyview.tasks.perspective_identification import perspective_identification
 from polyview.utils.helper import print_state_node
+
+logger = get_logger(__name__)
 
 MAX_ITERATIONS = 2
 MIN_ARTICLES_TO_SUMMARIZE = 3
@@ -27,7 +30,7 @@ def research_supervisor_node(state: State) -> dict:
         topic = state.get("topic", "")
         if not topic:
             raise ValueError("State has no set topic.")
-        print(f"Initializing with topic: '{topic}'")
+        logger.info(f"Initializing with topic: '{topic}'")
         return {
             "topic": topic,
             "iteration": 1,
@@ -35,7 +38,7 @@ def research_supervisor_node(state: State) -> dict:
         }
 
     iteration += 1
-    print(f"\nBeginning research cycle {iteration}.")
+    logger.info(f"Beginning research cycle {iteration}.")
     return {
         "iteration": iteration,
         "messages": [AIMessage(content=f"Running research cycle {iteration}...")]
@@ -53,14 +56,13 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
     raw_articles = state.get("raw_articles", [])
     perspectives = state.get("final_perspectives", [])
 
-    print("--- Decision Analysis ---")
-    print(f"Completed research cycles: {iteration}")
-    print(f"Articles found: {len(raw_articles)} (need {MIN_ARTICLES_TO_SUMMARIZE})")
-    print(f"Perspectives identified: {len(perspectives)} (need {MIN_PERSPECTIVES_TO_SUMMARIZE})")
-    print("-------------------------")
+    logger.info(
+        f"Decision point: Iteration: {iteration}, "
+        f"Articles: {len(raw_articles)} (need {MIN_ARTICLES_TO_SUMMARIZE}), "
+        f"Perspectives: {len(perspectives)} (need {MIN_PERSPECTIVES_TO_SUMMARIZE})")
 
     if iteration >= MAX_ITERATIONS:
-        print("Decision: Max iterations reached. Continuing.")
+        logger.info("Decision: Max iterations reached. Continuing.")
         return "debug_state"
 
     if iteration > 1:
@@ -68,10 +70,10 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
         has_enough_perspectives = len(perspectives) >= MIN_PERSPECTIVES_TO_SUMMARIZE
 
         if has_enough_articles and has_enough_perspectives:
-            print("Decision: Sufficient articles and perspectives found. Continuing.")
+            logger.info("Decision: Sufficient articles and perspectives found. Continuing.")
             return "debug_state"
 
-    print("Decision: More data or perspectives needed. Continuing research.")
+    logger.info("Decision: More data or perspectives needed. Continuing research.")
     return "search_agent"
 
 

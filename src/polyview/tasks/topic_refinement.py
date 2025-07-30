@@ -2,7 +2,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from polyview.core.llm_config import llm
+from polyview.core.logging import get_logger
 from polyview.core.state import State
+
+logger = get_logger(__name__)
 
 TOPIC_REFINEMENT_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -24,17 +27,17 @@ def topic_refinement_agent(state: State) -> dict:
     """
     Analyzes the user's message to extract a clear topic or asks for clarification.
     """
-    print("--- Refining Topic ---")
+    logger.info("--- Refining Topic ---")
     user_message = state["messages"][-1].content
 
     chain = TOPIC_REFINEMENT_PROMPT | llm | StrOutputParser()
 
-    print(f"Analyzing user message: '{user_message}'")
+    logger.info(f"Analyzing user message: '{user_message}'")
     analysis_result = chain.invoke({"user_message": user_message})
 
     if analysis_result.strip().upper() == "CLARIFY":
-        print("Clarification needed.")
+        logger.warning("Clarification needed.")
         return {"topic": "clarify"}
     else:
-        print(f"Refined topic: '{analysis_result}'")
+        logger.info(f"Refined topic: '{analysis_result}'")
         return {"topic": analysis_result}
