@@ -3,12 +3,8 @@ from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
 from polyview.core.logging import get_logger
-from polyview.core.state import (
-    ArticlePerspectives,
-    ConsolidatedPerspective,
-    ExtractedPerspective,
-    State,
-)
+from polyview.core.state import State, ConsolidatedPerspective, ExtractedPerspective, ArticlePerspectives, \
+    FinalPerspective
 
 logger = get_logger(__name__)
 
@@ -60,16 +56,40 @@ def _format_perspectives_for_prompt(
     ]
 
 
+def _create_synthesis_prompt(cluster_name: str, aggregated_narratives: list[str]) -> str:
+    """Creates a prompt for synthesizing a narrative from a list of narratives."""
+    synthesis_prompt = ChatPromptTemplate.from_template(
+        "Create a brief, synthesized narrative (1-2 paragraphs) from the following collected narratives for the perspective: '{cluster_name}'.\n\n---\n{narratives}\n---"
+    )
+    synthesis_chain = synthesis_prompt | llm
+    return synthesis_chain.invoke({
+        "cluster_name": cluster_name,
+        "narratives": "\n\n".join(aggregated_narratives)
+    }).content
+
+
 def _process_clustering_result(
-    result: ClusteringResult, all_perspectives: list[ExtractedPerspective]
+        result: ClusteringResult,
+        all_perspectives: list[ExtractedPerspective],
+        existing_perspectives: list[FinalPerspective]
 ) -> list[ConsolidatedPerspective]:
     """Processes the clustering result to consolidate arguments for each cluster."""
     consolidated_perspectives: list[ConsolidatedPerspective] = []
+
     for cluster in result.clusters:
         cluster_name = cluster.cluster_name
         aggregated_arguments = []
         aggregated_narratives = []
         supporting_evidence = []
+
+        # Check if the cluster corresponds to an existing perspective
+        existing_perspective = next((p for p in existing_perspectives if p.perspective_name == cluster_name), None)
+
+        if existing_perspective:
+            # If it is an existing perspective, we add the new arguments to it
+            aggregated_arguments.extend(existing_perspective.core_arguments)
+            aggregated_narratives.extend(existing_perspective.narrative)
+            supporting_evidence.extend(existing_perspective.strengths)
 
         for index in cluster.perspective_indices:
             if 0 <= index < len(all_perspectives):
@@ -78,23 +98,13 @@ def _process_clustering_result(
                 aggregated_narratives.append(perspective.contextual_narrative)
                 supporting_evidence.extend(perspective.evidence_provided)
 
-        # Create a preliminary synthesis
-        synthesis_prompt = ChatPromptTemplate.from_template(
-            "Create a brief, synthesized narrative (1-2 paragraphs) from the following collected narratives for the perspective: '{cluster_name}'.\n\n---\n{narratives}\n---"
-        )
-        synthesis_chain = synthesis_prompt | llm
-        preliminary_synthesis = synthesis_chain.invoke(
-            {
-                "cluster_name": cluster_name,
-                "narratives": "\n\n".join(aggregated_narratives),
-            }
-        ).content
+        preliminary_synthesis = _create_synthesis_prompt(cluster_name, aggregated_narratives)
 
         consolidated_perspectives.append(
             ConsolidatedPerspective(
                 perspective_name=cluster_name,
                 aggregated_arguments=list(dict.fromkeys(aggregated_arguments)),
-                aggregated_narratives=aggregated_narratives,
+                aggregated_narratives=list(dict.fromkeys(aggregated_narratives)),
                 supporting_evidence=list(dict.fromkeys(supporting_evidence)),
                 preliminary_synthesis=preliminary_synthesis,
             )
@@ -108,31 +118,44 @@ def _process_clustering_result(
 def perspective_clustering_node(state: State) -> dict:
     """
     Analyzes and clusters semantically similar perspectives into a consolidated view.
+    On the first run, it creates new clusters from the extracted perspectives.
+    On subsequent runs, it can cluster new perspectives into existing ones.
     """
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """You are an advanced analytical AI specializing in synthesizing diverse viewpoints into coherent, distinct perspectives. Your primary goal is to group a given list of individual perspective summaries into semantically similar clusters. Each cluster should represent a unique, meaningful, and well-defined core argument or viewpoint on the topic.
+    iteration = state.get("iteration", 1)
+    existing_perspectives = state.get("final_perspectives", [])
+
+    system_prompt = """You are an advanced analytical AI specializing in synthesizing diverse viewpoints into coherent, distinct perspectives. Your primary goal is to group a given list of individual perspective summaries into semantically similar clusters. Each cluster should represent a unique, meaningful, and well-defined core argument or viewpoint on the topic.
 
 Crucial Guidelines for Clustering:
 1.  **Holistic View:** Aim to create clusters that collectively offer a comprehensive and balanced understanding of the topic, covering the main schools of thought or arguments.
 2.  **Distinctness:** Each cluster must represent a clearly distinguishable perspective. Avoid creating clusters that are too broad, vague, or overlap significantly. Conversely, do not scatter closely related perspectives into too many separate, minor clusters.
 3.  **Core Argument Focus:** Identify perspectives that share the *same fundamental argument or central claim*, even if expressed with different wording or nuances.
 4.  **Cluster Naming:** For each identified cluster, provide a concise, descriptive, and neutral name that accurately captures its core idea. The name should immediately convey the essence of the perspective.
-5.  **Assignment:** Accurately assign the original indices of all perspectives that belong to each cluster.
+5.  **Assignment:** Accurately assign the original indices of all perspectives that belong to each cluster."""
 
-""",
-            ),
-            (
-                "human",
-                """Please cluster the following perspectives:
+    if iteration > 1 and existing_perspectives:
+        human_prompt = """You have already identified the following perspectives:
+
+```json
+{existing_perspectives}
+```
+
+Now, please cluster the following new perspectives. You can either assign them to one of the existing perspective clusters or create new ones if they don't fit.
+
+New perspectives to cluster:
 ```json
 {perspectives}
-```""",
-            ),
-        ]
-    )
+```"""
+    else:
+        human_prompt = """Please cluster the following perspectives:
+```json
+{perspectives}
+```"""
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("human", human_prompt),
+    ])
 
     structured_llm = llm.with_structured_output(ClusteringResult)
     chain = prompt | structured_llm
@@ -154,9 +177,14 @@ Crucial Guidelines for Clustering:
     perspectives_for_prompt = _format_perspectives_for_prompt(all_perspectives)
 
     logger.info(f"--- Clustering {len(all_perspectives)} perspectives ---")
-    # TODO: if iteration is > 0, pass current clusters to llm so it can cluster new perspectives in those clusters or
-    #  decide to create new ones
-    result = chain.invoke({"perspectives": perspectives_for_prompt})
-    consolidated_perspectives = _process_clustering_result(result, all_perspectives)
+
+    if iteration > 1 and existing_perspectives:
+        existing_perspectives_json = [p.model_dump_json(indent=2) for p in existing_perspectives]
+        result = chain.invoke(
+            {"perspectives": perspectives_for_prompt, "existing_perspectives": existing_perspectives_json})
+    else:
+        result = chain.invoke({"perspectives": perspectives_for_prompt})
+
+    consolidated_perspectives = _process_clustering_result(result, all_perspectives, existing_perspectives)
 
     return {"consolidated_perspectives": consolidated_perspectives}
