@@ -51,7 +51,7 @@ def formatter_node(state: State):
     formatting_chain = formatter_prompt | formatter_llm
 
     unstructured_output = state["messages"][-1].content
-    structured_result = formatting_chain.invoke({"text_to_format": unstructured_output})
+    structured_result: SearchAnalysis = formatting_chain.invoke({"text_to_format": unstructured_output})
 
     unique_articles = {article.url: article for article in structured_result.articles}
     final_articles_as_dicts = [
@@ -60,7 +60,7 @@ def formatter_node(state: State):
     ]
     
     # We also pass the final summary message to the state if needed elsewhere.
-    final_summary_message = HumanMessage(content=f"Search summary: {structured_result.perspective_name}")
+    final_summary_message = HumanMessage(content=f"Search summary: {structured_result.summary}")
 
     return {"raw_articles": final_articles_as_dicts, "messages": [final_summary_message]}
 

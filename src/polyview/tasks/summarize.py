@@ -67,7 +67,7 @@ def summarize_node(state: State):
 
     chain = prompt_template | llm | StrOutputParser()
 
-    summary_result = chain.invoke({"perspectives": state.get("identified_perspectives")})
+    summary_result = chain.invoke({"perspectives": state.get("final_perspectives")})
 
     print(summary_result)
     return {"summary": summary_result}

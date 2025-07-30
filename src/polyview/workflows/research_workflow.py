@@ -51,7 +51,7 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
     """
     iteration = state.get("iteration", 0)
     raw_articles = state.get("raw_articles", [])
-    perspectives = state.get("identified_perspectives", [])
+    perspectives = state.get("final_perspectives", [])
 
     print("--- Decision Analysis ---")
     print(f"Completed research cycles: {iteration}")
