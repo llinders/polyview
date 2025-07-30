@@ -49,9 +49,9 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
     This function evaluates the current state to decide whether to continue
     gathering data ("query_generation") or to proceed with summarizing the findings.
     """
-    iteration = state.get("iteration", 0)
+    iteration = state["iteration"]
     raw_articles = state.get("raw_articles", [])
-    perspectives = state.get("identified_perspectives", [])
+    perspectives = state.get("final_perspectives", [])
 
     print("--- Decision Analysis ---")
     print(f"Completed research cycles: {iteration}")
@@ -63,7 +63,7 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
         print("Decision: Max iterations reached. Continuing.")
         return "debug_state"
 
-    if iteration > 0:
+    if iteration > 1:
         has_enough_articles = len(raw_articles) >= MIN_ARTICLES_TO_SUMMARIZE
         has_enough_perspectives = len(perspectives) >= MIN_PERSPECTIVES_TO_SUMMARIZE
 
