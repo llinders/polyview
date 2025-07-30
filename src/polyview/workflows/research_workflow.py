@@ -6,8 +6,8 @@ from langgraph.graph import StateGraph
 from polyview.agents.search_agent import run_search_agent
 from polyview.core.logging import get_logger
 from polyview.core.state import State
-from polyview.tasks.perspective_identification import perspective_identification
 from polyview.utils.helper import print_state_node
+from polyview.workflows.perspective_analysis import graph as perspective_analysis_graph
 
 logger = get_logger(__name__)
 
@@ -83,28 +83,21 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
 workflow = StateGraph(State)
 workflow.add_node("supervisor", research_supervisor_node)
 workflow.add_node("search_agent", run_search_agent)
+workflow.add_node("perspective_analysis", perspective_analysis_graph)
 workflow.add_node("debug_state", print_state_node)
-workflow.add_node("perspective_identification", perspective_identification)
-## First run
-# 1. Individual perspective identification
-# 2. Perspective clustering & grouping arguments/facts (focus only on perspective and maybe a few arguments for more context and come up with a few core perspectives)
-# 3. Perspective elaboration (synthesizing the core of all aggregated arguments)
 
-## Other runs
-# Instead of just creating a new perspective group from the new articles, we should check if they can be
-# clustered into existing perspectives. If they can group them in there and review perspective elaboration if
-# new arguments are presented. Otherwise: create a new perspective
-# TODO: add perspective clustering so that perspectives are grouped after individual identification
-#  and add perspective elaboration, where all core arguments are summarized and a perspective is synthesized
-
-# TODO: for runs where iteration>1 first identify perspectives for each article as before, but when clustering
-#  check if they can be clustered into existing perspectives. After, check during
-#  perspective elaboration if new arguments are present for resynthesis of the final perspective
 
 workflow.set_entry_point("supervisor")
-workflow.add_conditional_edges("supervisor", decide_what_to_do)
-workflow.add_edge("search_agent", "perspective_identification")
-workflow.add_edge("perspective_identification", "supervisor")
+workflow.add_conditional_edges(
+    "supervisor",
+    decide_what_to_do,
+    {
+        "search_agent": "search_agent",
+        "debug_state": "debug_state",
+    }
+)
+workflow.add_edge("search_agent", "perspective_analysis")
+workflow.add_edge("perspective_analysis", "supervisor")
 workflow.set_finish_point("debug_state")
 
 graph = workflow.compile()
