@@ -1,7 +1,7 @@
 {
   "dependencies": ["./src/polyview/agents", "./src/polyview/tasks", "./src/polyview/workflows"],
   "graphs": {
-    "research_supervisor": "./src/polyview/workflows/research_workflow.py:graph",
+    "research_workflow": "./src/polyview/workflows/research_workflow.py:graph",
     "perspective_analysis": "./src/polyview/workflows/perspective_analysis.py:graph"
   },
   "env": ".env"
