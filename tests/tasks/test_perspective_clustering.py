@@ -20,11 +20,19 @@ def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
             perspectives=[
                 ExtractedPerspective(
                     perspective_summary="Summary 1A",
-                    key_arguments=["Arg 1A.1", "Arg 1A.2"]
+                    key_arguments=["Arg 1A.1", "Arg 1A.2"],
+                    contextual_narrative="Narrative 1A",
+                    source_article_summary="Source Summary 1A",
+                    inferred_assumptions=["Assumption 1A"],
+                    evidence_provided=["Evidence 1A"]
                 ),
                 ExtractedPerspective(
                     perspective_summary="Summary 1B",
-                    key_arguments=["Arg 1B.1", "Arg 1B.2"]
+                    key_arguments=["Arg 1B.1", "Arg 1B.2"],
+                    contextual_narrative="Narrative 1B",
+                    source_article_summary="Source Summary 1B",
+                    inferred_assumptions=["Assumption 1B"],
+                    evidence_provided=["Evidence 1B"]
                 ),
             ]
         ),
@@ -33,7 +41,11 @@ def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
             perspectives=[
                 ExtractedPerspective(
                     perspective_summary="Summary 2A",
-                    key_arguments=["Arg 2A.1", "Arg 2A.2", "Arg 1A.1"]
+                    key_arguments=["Arg 2A.1", "Arg 2A.2", "Arg 1A.1"],
+                    contextual_narrative="Narrative 2A",
+                    source_article_summary="Source Summary 2A",
+                    inferred_assumptions=["Assumption 2A"],
+                    evidence_provided=["Evidence 2A"]
                 )
             ]
         )
@@ -113,10 +125,10 @@ class TestProcessClusteringResult:
         assert isinstance(cluster_b_found, ConsolidatedPerspective)
 
         # Check arguments for Cluster A
-        assert set(cluster_a_found.arguments) == {"Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"}
+        assert set(cluster_a_found.aggregated_arguments) == {"Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"}
 
         # Check arguments for Cluster B
-        assert set(cluster_b_found.arguments) == {"Arg 1B.1", "Arg 1B.2"}
+        assert set(cluster_b_found.aggregated_arguments) == {"Arg 1B.1", "Arg 1B.2"}
 
     def test_empty_clusters_input(self):
         empty_result = ClusteringResult(clusters=[])
@@ -139,7 +151,7 @@ class TestProcessClusteringResult:
                 break
 
         assert invalid_cluster_found is not None
-        assert invalid_cluster_found.arguments == []  # Should be empty as index is invalid
+        assert invalid_cluster_found.aggregated_arguments == []  # Should be empty as index is invalid
 
     def test_duplicate_arguments_are_unique(self, sample_flattened_perspectives):
         clustering_result = ClusteringResult(
@@ -157,5 +169,5 @@ class TestProcessClusteringResult:
         cluster = consolidated_list[0]
 
         # Check that "Arg 1A.1" appears only once
-        assert cluster.arguments.count("Arg 1A.1") == 1
-        assert len(cluster.arguments) == 4  # Arg 1A.1, Arg 1A.2, Arg 2A.1, Arg 2A.2
+        assert cluster.aggregated_arguments.count("Arg 1A.1") == 1
+        assert len(cluster.aggregated_arguments) == 4  # Arg 1A.1, Arg 1A.2, Arg 2A.1, Arg 2A.2
