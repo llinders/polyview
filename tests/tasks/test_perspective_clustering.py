@@ -1,10 +1,9 @@
+from typing import List
+from unittest.mock import patch
+
 import pytest
 
-from polyview.core.state import (
-    ArticlePerspectives,
-    ConsolidatedPerspective,
-    ExtractedPerspective,
-)
+from polyview.core.state import ExtractedPerspective, ArticlePerspectives, FinalPerspective
 from polyview.tasks.perspective_clustering import (
     ClusteringResult,
     PerspectiveCluster,
@@ -56,7 +55,7 @@ def sample_extracted_perspectives_data() -> list[ArticlePerspectives]:
 
 @pytest.fixture
 def sample_flattened_perspectives(
-    sample_extracted_perspectives_data,
+        sample_extracted_perspectives_data,
 ) -> list[ExtractedPerspective]:
     return _flatten_perspectives(sample_extracted_perspectives_data)
 
@@ -110,73 +109,43 @@ class TestFormatPerspectivesForPrompt:
 
 
 class TestProcessClusteringResult:
-    def test_basic_consolidation(
-        self, sample_clustering_result, sample_flattened_perspectives
-    ):
-        consolidated_list = _process_clustering_result(
-            sample_clustering_result, sample_flattened_perspectives
-        )
+    @patch('polyview.tasks.perspective_clustering._create_synthesis_prompt', return_value="Synthesized Narrative")
+    def test_basic_consolidation(self, mock_synthesis, sample_clustering_result, sample_flattened_perspectives):
+        consolidated_list = _process_clustering_result(sample_clustering_result, sample_flattened_perspectives, [])
 
         assert isinstance(consolidated_list, list)
         assert len(consolidated_list) == 2
 
-        cluster_a_found = None
-        cluster_b_found = None
-        for cp in consolidated_list:
-            if cp.perspective_name == "Cluster A":
-                cluster_a_found = cp
-            elif cp.perspective_name == "Cluster B":
-                cluster_b_found = cp
+        cluster_a_found = next((cp for cp in consolidated_list if cp.perspective_name == "Cluster A"), None)
+        cluster_b_found = next((cp for cp in consolidated_list if cp.perspective_name == "Cluster B"), None)
 
         assert cluster_a_found is not None
         assert cluster_b_found is not None
 
-        assert isinstance(cluster_a_found, ConsolidatedPerspective)
-        assert isinstance(cluster_b_found, ConsolidatedPerspective)
-
-        # Check arguments for Cluster A
-        assert set(cluster_a_found.aggregated_arguments) == {
-            "Arg 1A.1",
-            "Arg 1A.2",
-            "Arg 2A.1",
-            "Arg 2A.2",
-        }
-
-        # Check arguments for Cluster B
+        assert set(cluster_a_found.aggregated_arguments) == {"Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"}
         assert set(cluster_b_found.aggregated_arguments) == {"Arg 1B.1", "Arg 1B.2"}
+        assert cluster_a_found.preliminary_synthesis == "Synthesized Narrative"
 
-    def test_empty_clusters_input(self):
+    @patch('polyview.tasks.perspective_clustering._create_synthesis_prompt', return_value="Synthesized Narrative")
+    def test_empty_clusters_input(self, mock_synthesis):
         empty_result = ClusteringResult(clusters=[])
-        assert _process_clustering_result(empty_result, []) == []
+        assert _process_clustering_result(empty_result, [], []) == []
 
-    def test_invalid_perspective_index_handling(
-        self, sample_clustering_result, sample_flattened_perspectives
-    ):
-        # Create a result with an invalid index
-        invalid_cluster = PerspectiveCluster(
-            cluster_name="Invalid Cluster",
-            perspective_indices=[999],  # Index out of bounds
-        )
-        test_clustering_result = ClusteringResult(
-            clusters=sample_clustering_result.clusters + [invalid_cluster]
-        )
+    @patch('polyview.tasks.perspective_clustering._create_synthesis_prompt', return_value="Synthesized Narrative")
+    def test_invalid_perspective_index_handling(self, mock_synthesis, sample_clustering_result,
+                                                sample_flattened_perspectives):
+        invalid_cluster = PerspectiveCluster(cluster_name="Invalid Cluster", perspective_indices=[999])
+        test_clustering_result = ClusteringResult(clusters=sample_clustering_result.clusters + [invalid_cluster])
 
-        consolidated_list = _process_clustering_result(
-            test_clustering_result, sample_flattened_perspectives
-        )
+        consolidated_list = _process_clustering_result(test_clustering_result, sample_flattened_perspectives, [])
 
-        invalid_cluster_found = None
-        for cp in consolidated_list:
-            if cp.perspective_name == "Invalid Cluster":
-                invalid_cluster_found = cp
-                break
+        invalid_cluster_found = next((cp for cp in consolidated_list if cp.perspective_name == "Invalid Cluster"), None)
 
         assert invalid_cluster_found is not None
-        assert (
-            invalid_cluster_found.aggregated_arguments == []
-        )  # Should be empty as index is invalid
+        assert invalid_cluster_found.aggregated_arguments == []
 
-    def test_duplicate_arguments_are_unique(self, sample_flattened_perspectives):
+    @patch('polyview.tasks.perspective_clustering._create_synthesis_prompt', return_value="Synthesized Narrative")
+    def test_duplicate_arguments_are_unique(self, mock_synthesis, sample_flattened_perspectives):
         clustering_result = ClusteringResult(
             clusters=[
                 PerspectiveCluster(
@@ -193,8 +162,28 @@ class TestProcessClusteringResult:
         assert len(consolidated_list) == 1
         cluster = consolidated_list[0]
 
-        # Check that "Arg 1A.1" appears only once
         assert cluster.aggregated_arguments.count("Arg 1A.1") == 1
-        assert (
-            len(cluster.aggregated_arguments) == 4
-        )  # Arg 1A.1, Arg 1A.2, Arg 2A.1, Arg 2A.2
+        assert len(cluster.aggregated_arguments) == 4
+
+    @patch('polyview.tasks.perspective_clustering._create_synthesis_prompt', return_value="Synthesized Narrative")
+    def test_with_existing_perspectives(self, mock_synthesis, sample_clustering_result, sample_flattened_perspectives):
+        existing_perspectives = [
+            FinalPerspective(
+                perspective_name="Cluster A",
+                narrative="Existing Narrative",
+                core_arguments=["Existing Arg"],
+                common_assumptions=[],
+                strengths=["Existing Strength"],
+                weaknesses=[]
+            )
+        ]
+
+        consolidated_list = _process_clustering_result(sample_clustering_result, sample_flattened_perspectives,
+                                                       existing_perspectives)
+
+        cluster_a_found = next((cp for cp in consolidated_list if cp.perspective_name == "Cluster A"), None)
+
+        assert cluster_a_found is not None
+        assert "Existing Arg" in cluster_a_found.aggregated_arguments
+        assert "Existing Narrative" in cluster_a_found.aggregated_narratives
+        assert "Existing Strength" in cluster_a_found.supporting_evidence
