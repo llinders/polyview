@@ -1,21 +1,27 @@
-from typing import List
+from typing import List, Dict
 
+from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.tools import tool
-from langgraph.prebuilt.chat_agent_executor import AgentState
+
 
 @tool
-def scrape_webpages(urls: List[str]) -> str:
+def scrape_webpages(urls: List[str]) -> Dict[str, str]:
     """
     Scrape the webpages from the given urls.
 
     :param urls: List of urls to scrape.
-    :return: A string containing the scraped webpages.
+    :return: A dictionary where keys are the URLs and values are the content of the webpages.
     """
-    #TODO: implement
-    return "<Article name=Article 1>Content of article</Article> <Article name=Article 2>Article with different content</Article>"
+    loader = WebBaseLoader(
+        web_paths=urls,
+        continue_on_failure=True,
+    )
+    docs = loader.load()
 
-def web_scraping_node(state: AgentState):
-    """Scrapes internet using the provided search queries."""
-    
+    scraped_content = {}
+    for doc in docs:
+        url = doc.metadata.get("source")
+        if url:
+            scraped_content[url] = doc.page_content
 
-
+    return scraped_content
