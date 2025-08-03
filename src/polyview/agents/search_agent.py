@@ -35,33 +35,47 @@ def agent_node(state: State) -> dict:
 def tool_node(state: State) -> dict:
     """Executes tool calls and adds the result as ToolMessages to the state."""
     tool_calls = state["messages"][-1].tool_calls
+    if not tool_calls:
+        logger.warning("No tool calls found in the last message.")
+        return {"messages": []}
+
     logger.debug(f"Executing tool calls: {tool_calls}")
     tool_messages = []
     for tool_call in tool_calls:
-        result = search_tool.invoke(tool_call["args"])
-        search_results = result.get("results", []) if isinstance(result, dict) else result
-        filtered_results = [res for res in search_results if res.get("score", 0) >= MIN_MATCH_SCORE]
-        logger.debug(f"Filtered tool call results: {filtered_results}")
-        tool_messages.append(
-            ToolMessage(
-                content=json.dumps(filtered_results), tool_call_id=tool_call["id"]
+        try:
+            result = search_tool.invoke(tool_call["args"])
+            search_results = result.get("results", []) if isinstance(result, dict) else result
+            filtered_results = [res for res in search_results if res.get("score", 0) >= MIN_MATCH_SCORE]
+            logger.debug(f"Filtered tool call results: {filtered_results}")
+            tool_messages.append(
+                ToolMessage(
+                    content=json.dumps(filtered_results), tool_call_id=tool_call["id"]
+                )
             )
-        )
+        except Exception as e:
+            logger.error(f"Error executing tool {tool_call['name']}: {e}")
+            # Optionally, add an error message to the state
+            tool_messages.append(
+                ToolMessage(
+                    content=json.dumps({"error": str(e)}),
+                    tool_call_id=tool_call["id"]
+                )
+            )
     return {"messages": tool_messages}
 
 
 def process_results_node(state: State) -> dict:
-    """Processes search results and adds them to the state."""
+    """Processes search results, removes duplicates, and adds them to the state."""
     articles = []
+    processed_urls = set()
+
     for message in state["messages"]:
         if isinstance(message, ToolMessage):
             search_results = json.loads(message.content)
-            articles.extend(
-                [
-                    {**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()}
-                    for res in search_results
-                ]
-            )
+            for res in search_results:
+                if res["url"] not in processed_urls:
+                    articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
+                    processed_urls.add(res["url"])
 
     logger.info(f"Found {len(articles)} articles.")
     final_message = HumanMessage(content=f"Found {len(articles)} articles.")
