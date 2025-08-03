@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-import pytest
 from langchain_core.messages import AIMessage, HumanMessage
+import pytest
 
 from polyview.agents.search_agent import run_search_agent
 from polyview.core.state import State
@@ -32,7 +32,7 @@ def test_run_search_agent_end_to_end_flow(mock_agent_graph, initial_state):
         "raw_articles": [
             {"id": "test_id", "url": "http://example.com", "content": "Test content"}
         ],
-        "messages": [AIMessage(content="Search complete.")]
+        "messages": [AIMessage(content="Search complete.")],
     }
 
     # Act
@@ -54,7 +54,7 @@ def test_run_search_agent_immediate_end(mock_agent_graph, initial_state):
     # Arrange: Mock the graph to return a message without tool calls
     mock_agent_graph.invoke.return_value = {
         "raw_articles": [],
-        "messages": [AIMessage(content="No search needed.")]
+        "messages": [AIMessage(content="No search needed.")],
     }
 
     # Act

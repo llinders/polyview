@@ -1,10 +1,14 @@
 import json
 from unittest.mock import patch
 
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 import pytest
-from langchain_core.messages import ToolMessage, HumanMessage, AIMessage
 
-from polyview.agents.search_agent import process_results_node, tool_node, should_continue
+from polyview.agents.search_agent import (
+    process_results_node,
+    should_continue,
+    tool_node,
+)
 from polyview.core.state import State
 
 
@@ -42,23 +46,27 @@ def state_with_tool_messages(empty_state: State) -> State:
     ]
 
     state = empty_state.copy()
-    state.update({
-        "messages": messages,
-        "topic": "climate change",
-    })
+    state.update(
+        {
+            "messages": messages,
+            "topic": "climate change",
+        }
+    )
     return state
 
 
 class TestToolNode:
-    @patch('polyview.agents.search_agent.search_tool')
-    def test_returns_empty_list_when_no_tool_calls_are_present(self, mock_search_tool, empty_state):
+    @patch("polyview.agents.search_agent.search_tool")
+    def test_returns_empty_list_when_no_tool_calls_are_present(
+            self, mock_search_tool, empty_state
+    ):
         state = empty_state
         state["messages"] = [AIMessage(content="No tools needed.")]
         result = tool_node(state)
         assert result["messages"] == []
         mock_search_tool.invoke.assert_not_called()
 
-    @patch('polyview.agents.search_agent.search_tool')
+    @patch("polyview.agents.search_agent.search_tool")
     def test_correctly_handles_multiple_tool_calls(self, mock_search_tool, empty_state):
         mock_search_tool.invoke.side_effect = [
             {"results": [{"url": "http://a.com", "score": 0.9}]},
@@ -76,10 +84,12 @@ class TestToolNode:
         assert json.loads(result["messages"][0].content)[0]["url"] == "http://a.com"
         assert json.loads(result["messages"][1].content)[0]["url"] == "http://b.com"
 
-    @patch('polyview.agents.search_agent.search_tool')
+    @patch("polyview.agents.search_agent.search_tool")
     def test_gracefully_handles_tool_failure(self, mock_search_tool, empty_state):
         mock_search_tool.invoke.side_effect = Exception("API limit reached")
-        tool_calls = [{"id": "call_1", "name": "tavily_search", "args": {"query": "q1"}}]
+        tool_calls = [
+            {"id": "call_1", "name": "tavily_search", "args": {"query": "q1"}}
+        ]
         state = empty_state
         state["messages"] = [AIMessage(content="", tool_calls=tool_calls)]
 
@@ -89,10 +99,12 @@ class TestToolNode:
         assert "error" in error_content
         assert error_content["error"] == "API limit reached"
 
-    @patch('polyview.agents.search_agent.search_tool')
+    @patch("polyview.agents.search_agent.search_tool")
     def test_handles_empty_search_results(self, mock_search_tool, empty_state):
         mock_search_tool.invoke.return_value = {"results": []}
-        tool_calls = [{"id": "call_1", "name": "tavily_search", "args": {"query": "q1"}}]
+        tool_calls = [
+            {"id": "call_1", "name": "tavily_search", "args": {"query": "q1"}}
+        ]
         state = empty_state
         state["messages"] = [AIMessage(content="", tool_calls=tool_calls)]
 
@@ -102,7 +114,9 @@ class TestToolNode:
 
 
 class TestProcessResultsNode:
-    def test_correctly_extracts_articles_from_tool_messages(self, state_with_tool_messages):
+    def test_correctly_extracts_articles_from_tool_messages(
+            self, state_with_tool_messages
+    ):
         result = process_results_node(state_with_tool_messages)
         assert len(result["raw_articles"]) == 3
         assert result["raw_articles"][0]["url"] == "http://a.com"
@@ -118,7 +132,9 @@ class TestProcessResultsNode:
             {"url": "http://b.com", "title": "B"},
             {"url": "http://a.com", "title": "A Duplicate"},
         ]
-        messages = [ToolMessage(content=json.dumps(duplicate_results), tool_call_id="call_1")]
+        messages = [
+            ToolMessage(content=json.dumps(duplicate_results), tool_call_id="call_1")
+        ]
         state = empty_state
         state["messages"] = messages
 
@@ -137,7 +153,9 @@ class TestProcessResultsNode:
 
     def test_skips_tool_messages_containing_an_error(self, empty_state):
         error_message = {"error": "Tool failed to execute"}
-        messages = [ToolMessage(content=json.dumps(error_message), tool_call_id="call_1")]
+        messages = [
+            ToolMessage(content=json.dumps(error_message), tool_call_id="call_1")
+        ]
         state = empty_state
         state["messages"] = messages
 
@@ -147,7 +165,9 @@ class TestProcessResultsNode:
 
 class TestShouldContinue:
     def test_returns_continue_when_tool_calls_are_present(self, empty_state):
-        tool_calls = [{"id": "call_1", "name": "tavily_search", "args": {"query": "q1"}}]
+        tool_calls = [
+            {"id": "call_1", "name": "tavily_search", "args": {"query": "q1"}}
+        ]
         state = empty_state
         state["messages"] = [AIMessage(content="", tool_calls=tool_calls)]
         assert should_continue(state) == "continue"

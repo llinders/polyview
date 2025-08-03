@@ -1,17 +1,17 @@
-from typing import List
-
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
 from polyview.core.logging import get_logger
-from polyview.core.state import State, ExtractedPerspective, ArticlePerspectives
+from polyview.core.state import ArticlePerspectives, ExtractedPerspective, State
 
 logger = get_logger(__name__)
 
 
 class ExtractedPerspectives(BaseModel):
-    perspectives: List[ExtractedPerspective] = Field(description="A list of extracted perspectives.")
+    perspectives: list[ExtractedPerspective] = Field(
+        description="A list of extracted perspectives."
+    )
 
 
 def perspective_identification(state: State) -> dict:
@@ -34,11 +34,11 @@ A perspective is a specific viewpoint, stance, or framing.
 For each one you find, you must populate the fields as provided in the 'ExtractedPerspectives' object.
 
 Extract only what is explicitly presented or strongly implied in the text. Do not invent information. Keep each perspective distinct.
-                """
+                """,
             ),
             (
                 "human",
-                "Analyze the following article text:\n\n---\n{article_text}\n---"
+                "Analyze the following article text:\n\n---\n{article_text}\n---",
             ),
         ]
     )
@@ -49,23 +49,26 @@ Extract only what is explicitly presented or strongly implied in the text. Do no
     articles_to_process = state.get("raw_articles")
     topic = state.get("topic")
 
-    all_extracted_perspectives: List[ArticlePerspectives] = []
+    all_extracted_perspectives: list[ArticlePerspectives] = []
 
-    logger.info(f"--- Identifying perspectives for {len(articles_to_process)} articles on topic: {topic} ---")
+    logger.info(
+        f"--- Identifying perspectives for {len(articles_to_process)} articles on topic: {topic} ---"
+    )
 
     for article in articles_to_process:
         article_id = article["id"]
-        logger.info(f"Processing article {article_id}: {article["url"]}")
+        logger.info(f"Processing article {article_id}: {article['url']}")
         try:
-            extracted_object = chain.invoke({
-                "topic": topic,
-                "article_text": article["content"]
-            })
+            extracted_object = chain.invoke(
+                {"topic": topic, "article_text": article["content"]}
+            )
 
             perspectives_list = extracted_object.perspectives
 
             if not isinstance(perspectives_list, list):
-                logger.warning(f"The 'perspectives' attribute is not a list. Response: {extracted_object}")
+                logger.warning(
+                    f"The 'perspectives' attribute is not a list. Response: {extracted_object}"
+                )
                 perspectives_list = []
 
             article_perspectives = ArticlePerspectives(

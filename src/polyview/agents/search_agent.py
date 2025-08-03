@@ -2,7 +2,7 @@ import hashlib
 import json
 from typing import Literal
 
-from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph
@@ -19,7 +19,9 @@ MAX_INITIAL_SEARCH_QUERIES = 3
 MAX_ADDITIONAL_QUERIES = 2
 
 MAX_SEARCH_RESULTS_PER_QUERY = 3
-MIN_MATCH_SCORE = 0.4  # Minimum matching score an article should have in correspondence to the query
+MIN_MATCH_SCORE = (
+    0.4  # Minimum matching score an article should have in correspondence to the query
+)
 
 search_tool = TavilySearch(max_results=MAX_SEARCH_RESULTS_PER_QUERY)
 llm_with_tools = llm.bind_tools([search_tool])
@@ -44,8 +46,12 @@ def tool_node(state: State) -> dict:
     for tool_call in tool_calls:
         try:
             result = search_tool.invoke(tool_call["args"])
-            search_results = result.get("results", []) if isinstance(result, dict) else result
-            filtered_results = [res for res in search_results if res.get("score", 0) >= MIN_MATCH_SCORE]
+            search_results = (
+                result.get("results", []) if isinstance(result, dict) else result
+            )
+            filtered_results = [
+                res for res in search_results if res.get("score", 0) >= MIN_MATCH_SCORE
+            ]
             logger.debug(f"Filtered tool call results: {filtered_results}")
             tool_messages.append(
                 ToolMessage(
@@ -56,8 +62,7 @@ def tool_node(state: State) -> dict:
             logger.error(f"Error executing tool {tool_call['name']}: {e}")
             tool_messages.append(
                 ToolMessage(
-                    content=json.dumps({"error": str(e)}),
-                    tool_call_id=tool_call["id"]
+                    content=json.dumps({"error": str(e)}), tool_call_id=tool_call["id"]
                 )
             )
     return {"messages": tool_messages}
@@ -78,7 +83,9 @@ def process_results_node(state: State) -> dict:
         try:
             content = json.loads(message.content)
         except json.JSONDecodeError:
-            logger.warning(f"Skipping ToolMessage with invalid JSON: {message.content!r}")
+            logger.warning(
+                f"Skipping ToolMessage with invalid JSON: {message.content!r}"
+            )
             continue
 
         # Handle tool errors
@@ -94,11 +101,12 @@ def process_results_node(state: State) -> dict:
         for res in content:
             if isinstance(res, dict) and "url" in res:
                 if res["url"] not in processed_urls:
-                    articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
+                    articles.append(
+                        {**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()}
+                    )
                     processed_urls.add(res["url"])
             else:
                 logger.warning(f"Skipping invalid item in search results: {res}")
-
 
     logger.info(f"Found {len(articles)} articles.")
     final_message = HumanMessage(content=f"Found {len(articles)} articles.")

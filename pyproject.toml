@@ -35,3 +35,47 @@ markers = [
     "integration: marks tests as integration tests",
 ]
 addopts = "-m \"not integration\""
+
+
+[tool.ruff]
+line-length = 88  # Black-compatible
+target-version = "py313"
+fix = true
+unsafe-fixes = false
+
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["polyview"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    "B", # flake8-bugbear
+    "I", # isort
+    "UP", # pyupgrade
+    "N", # pep8-naming
+    "A", # prevent built-in names shadowing
+    "C4", # flake8-comprehensions
+    "TID", # flake8-tidy-imports
+    "TCH", # type-checking imports
+    "PT", # pytest-style checks
+]
+
+ignore = [
+    "E501", # Line length (handled by Black)
+    "A003", # Allow class attribute 'id' even though it shadows built-in
+]
+fixable = ["ALL"]
+unfixable = []

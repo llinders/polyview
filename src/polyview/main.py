@@ -13,9 +13,9 @@ if __name__ == "__main__":
                 "Differing perspectives on the Israel-Palestine conflict: Israeli vs Palestinian narratives",
                 "Historical timeline of the Israel-Palestine conflict since 1948",
                 "What are the main political and territorial disputes between Israel and Palestine?",
-                "Role of international actors in the Israel-Palestine conflict (UN, US, Arab League, etc.)"
+                "Role of international actors in the Israel-Palestine conflict (UN, US, Arab League, etc.)",
             ],
-            "messages": []
+            "messages": [],
         }
     )
     logger.info("--- Test Workflow Finished ---")

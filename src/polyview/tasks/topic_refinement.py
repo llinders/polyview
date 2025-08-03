@@ -23,6 +23,7 @@ Do not add any preamble or explanation to your response.""",
     ]
 )
 
+
 def topic_refinement_agent(state: State) -> dict:
     """
     Analyzes the user's message to extract a clear topic or asks for clarification.

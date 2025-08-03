@@ -1,39 +1,45 @@
-from typing import List, Dict
-
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
 from polyview.core.logging import get_logger
-from polyview.core.state import State, ConsolidatedPerspective, ExtractedPerspective, ArticlePerspectives
+from polyview.core.state import (
+    ArticlePerspectives,
+    ConsolidatedPerspective,
+    ExtractedPerspective,
+    State,
+)
 
 logger = get_logger(__name__)
 
 
 class PerspectiveCluster(BaseModel):
     """A single cluster of similar perspectives."""
-    cluster_name: str = (
-        Field(
-            description="A short, descriptive name for the cluster (e.g., 'Scientific Consensus', 'Techno-Optimist', "
-                        "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
-                        "'Conservative', 'Liberal', etc. The name should immediately convey the essence of the perspective."
-        ))
-    perspective_indices: List[int] = Field(
+
+    cluster_name: str = Field(
+        description="A short, descriptive name for the cluster (e.g., 'Scientific Consensus', 'Techno-Optimist', "
+                    "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
+                    "'Conservative', 'Liberal', etc. The name should immediately convey the essence of the perspective."
+    )
+    perspective_indices: list[int] = Field(
         description="The list of indices corresponding to the original perspectives that belong to this cluster."
     )
 
 
 class ClusteringResult(BaseModel):
     """The result of clustering all perspectives."""
-    clusters: List[PerspectiveCluster]
+
+    clusters: list[PerspectiveCluster]
 
 
-def _flatten_perspectives(article_perspectives_list: List[ArticlePerspectives]) -> List[ExtractedPerspective]:
+def _flatten_perspectives(
+        article_perspectives_list: list[ArticlePerspectives],
+) -> list[ExtractedPerspective]:
     """
     Flattens a list of ArticlePerspectives into a single list of ExtractedPerspective objects.
     This function handles cases where the input list contains dictionaries instead of Pydantic objects.
     """
-    all_perspectives: List[ExtractedPerspective] = []
+    all_perspectives: list[ExtractedPerspective] = []
     # The data from the state can be a list of dicts, so we parse them into ArticlePerspectives objects.
     for item in article_perspectives_list:
         if isinstance(item, dict):
@@ -44,7 +50,9 @@ def _flatten_perspectives(article_perspectives_list: List[ArticlePerspectives]) 
     return all_perspectives
 
 
-def _format_perspectives_for_prompt(all_perspectives: List[ExtractedPerspective]) -> List[Dict]:
+def _format_perspectives_for_prompt(
+        all_perspectives: list[ExtractedPerspective],
+) -> list[dict]:
     """Formats perspectives for the LLM prompt, including their original index and summary."""
     return [
         {"index": i, "summary": p.perspective_summary}
@@ -52,10 +60,11 @@ def _format_perspectives_for_prompt(all_perspectives: List[ExtractedPerspective]
     ]
 
 
-def _process_clustering_result(result: ClusteringResult, all_perspectives: List[ExtractedPerspective]) -> List[
-    ConsolidatedPerspective]:
+def _process_clustering_result(
+        result: ClusteringResult, all_perspectives: list[ExtractedPerspective]
+) -> list[ConsolidatedPerspective]:
     """Processes the clustering result to consolidate arguments for each cluster."""
-    consolidated_perspectives: List[ConsolidatedPerspective] = []
+    consolidated_perspectives: list[ConsolidatedPerspective] = []
     for cluster in result.clusters:
         cluster_name = cluster.cluster_name
         aggregated_arguments = []
@@ -74,10 +83,12 @@ def _process_clustering_result(result: ClusteringResult, all_perspectives: List[
             "Create a brief, synthesized narrative (1-2 paragraphs) from the following collected narratives for the perspective: '{cluster_name}'.\n\n---\n{narratives}\n---"
         )
         synthesis_chain = synthesis_prompt | llm
-        preliminary_synthesis = synthesis_chain.invoke({
-            "cluster_name": cluster_name,
-            "narratives": "\n\n".join(aggregated_narratives)
-        }).content
+        preliminary_synthesis = synthesis_chain.invoke(
+            {
+                "cluster_name": cluster_name,
+                "narratives": "\n\n".join(aggregated_narratives),
+            }
+        ).content
 
         consolidated_perspectives.append(
             ConsolidatedPerspective(
@@ -85,10 +96,12 @@ def _process_clustering_result(result: ClusteringResult, all_perspectives: List[
                 aggregated_arguments=list(dict.fromkeys(aggregated_arguments)),
                 aggregated_narratives=aggregated_narratives,
                 supporting_evidence=list(dict.fromkeys(supporting_evidence)),
-                preliminary_synthesis=preliminary_synthesis
+                preliminary_synthesis=preliminary_synthesis,
             )
         )
-        logger.info(f"Created cluster '{cluster_name}' with {len(aggregated_arguments)} arguments.")
+        logger.info(
+            f"Created cluster '{cluster_name}' with {len(aggregated_arguments)} arguments."
+        )
     return consolidated_perspectives
 
 
@@ -109,14 +122,14 @@ Crucial Guidelines for Clustering:
 4.  **Cluster Naming:** For each identified cluster, provide a concise, descriptive, and neutral name that accurately captures its core idea. The name should immediately convey the essence of the perspective.
 5.  **Assignment:** Accurately assign the original indices of all perspectives that belong to each cluster.
 
-"""
+""",
             ),
             (
                 "human",
                 """Please cluster the following perspectives:
 ```json
 {perspectives}
-```"""
+```""",
             ),
         ]
     )

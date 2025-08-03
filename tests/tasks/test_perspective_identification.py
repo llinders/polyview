@@ -1,9 +1,12 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from polyview.core.state import ExtractedPerspective
-from polyview.tasks.perspective_identification import perspective_identification, ExtractedPerspectives
+from polyview.tasks.perspective_identification import (
+    ExtractedPerspectives,
+    perspective_identification,
+)
 
 
 @pytest.fixture
@@ -26,15 +29,17 @@ def mock_llm_response():
                 contextual_narrative="Test Narrative",
                 source_article_summary="Test Source Summary",
                 inferred_assumptions=["Test Assumption"],
-                evidence_provided=["Test Evidence"]
+                evidence_provided=["Test Evidence"],
             )
         ]
     )
 
 
-@patch('polyview.tasks.perspective_identification.ChatPromptTemplate')
-@patch('polyview.tasks.perspective_identification.llm')
-def test_perspective_identification_success(mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response):
+@patch("polyview.tasks.perspective_identification.ChatPromptTemplate")
+@patch("polyview.tasks.perspective_identification.llm")
+def test_perspective_identification_success(
+        mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response
+):
     mock_structured_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_structured_llm
     mock_prompt = MagicMock()
@@ -52,9 +57,11 @@ def test_perspective_identification_success(mock_llm, mock_prompt_template, samp
     assert mock_final_chain.invoke.call_count == 2
 
 
-@patch('polyview.tasks.perspective_identification.ChatPromptTemplate')
-@patch('polyview.tasks.perspective_identification.llm')
-def test_perspective_identification_llm_failure(mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response):
+@patch("polyview.tasks.perspective_identification.ChatPromptTemplate")
+@patch("polyview.tasks.perspective_identification.llm")
+def test_perspective_identification_llm_failure(
+        mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response
+):
     mock_structured_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_structured_llm
     mock_prompt = MagicMock()

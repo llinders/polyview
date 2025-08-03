@@ -1,22 +1,24 @@
-from typing import List
-
 import pytest
 
-from polyview.core.state import ExtractedPerspective, ConsolidatedPerspective, ArticlePerspectives
+from polyview.core.state import (
+    ArticlePerspectives,
+    ConsolidatedPerspective,
+    ExtractedPerspective,
+)
 from polyview.tasks.perspective_clustering import (
+    ClusteringResult,
+    PerspectiveCluster,
     _flatten_perspectives,
     _format_perspectives_for_prompt,
     _process_clustering_result,
-    ClusteringResult,
-    PerspectiveCluster
 )
 
 
 @pytest.fixture
-def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
+def sample_extracted_perspectives_data() -> list[ArticlePerspectives]:
     return [
         ArticlePerspectives(
-            source_article_id='id1',
+            source_article_id="id1",
             perspectives=[
                 ExtractedPerspective(
                     perspective_summary="Summary 1A",
@@ -24,7 +26,7 @@ def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
                     contextual_narrative="Narrative 1A",
                     source_article_summary="Source Summary 1A",
                     inferred_assumptions=["Assumption 1A"],
-                    evidence_provided=["Evidence 1A"]
+                    evidence_provided=["Evidence 1A"],
                 ),
                 ExtractedPerspective(
                     perspective_summary="Summary 1B",
@@ -32,12 +34,12 @@ def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
                     contextual_narrative="Narrative 1B",
                     source_article_summary="Source Summary 1B",
                     inferred_assumptions=["Assumption 1B"],
-                    evidence_provided=["Evidence 1B"]
+                    evidence_provided=["Evidence 1B"],
                 ),
-            ]
+            ],
         ),
         ArticlePerspectives(
-            source_article_id='id2',
+            source_article_id="id2",
             perspectives=[
                 ExtractedPerspective(
                     perspective_summary="Summary 2A",
@@ -45,15 +47,19 @@ def sample_extracted_perspectives_data() -> List[ArticlePerspectives]:
                     contextual_narrative="Narrative 2A",
                     source_article_summary="Source Summary 2A",
                     inferred_assumptions=["Assumption 2A"],
-                    evidence_provided=["Evidence 2A"]
+                    evidence_provided=["Evidence 2A"],
                 )
-            ]
-        )
+            ],
+        ),
     ]
 
+
 @pytest.fixture
-def sample_flattened_perspectives(sample_extracted_perspectives_data) -> List[ExtractedPerspective]:
+def sample_flattened_perspectives(
+        sample_extracted_perspectives_data,
+) -> list[ExtractedPerspective]:
     return _flatten_perspectives(sample_extracted_perspectives_data)
+
 
 @pytest.fixture
 def sample_clustering_result() -> ClusteringResult:
@@ -61,12 +67,12 @@ def sample_clustering_result() -> ClusteringResult:
         clusters=[
             PerspectiveCluster(
                 cluster_name="Cluster A",
-                perspective_indices=[0, 2] # Corresponds to Summary 1A and Summary 2A
+                perspective_indices=[0, 2],  # Corresponds to Summary 1A and Summary 2A
             ),
             PerspectiveCluster(
                 cluster_name="Cluster B",
-                perspective_indices=[1] # Corresponds to Summary 1B
-            )
+                perspective_indices=[1],  # Corresponds to Summary 1B
+            ),
         ]
     )
 
@@ -104,8 +110,12 @@ class TestFormatPerspectivesForPrompt:
 
 
 class TestProcessClusteringResult:
-    def test_basic_consolidation(self, sample_clustering_result, sample_flattened_perspectives):
-        consolidated_list = _process_clustering_result(sample_clustering_result, sample_flattened_perspectives)
+    def test_basic_consolidation(
+            self, sample_clustering_result, sample_flattened_perspectives
+    ):
+        consolidated_list = _process_clustering_result(
+            sample_clustering_result, sample_flattened_perspectives
+        )
 
         assert isinstance(consolidated_list, list)
         assert len(consolidated_list) == 2
@@ -125,7 +135,12 @@ class TestProcessClusteringResult:
         assert isinstance(cluster_b_found, ConsolidatedPerspective)
 
         # Check arguments for Cluster A
-        assert set(cluster_a_found.aggregated_arguments) == {"Arg 1A.1", "Arg 1A.2", "Arg 2A.1", "Arg 2A.2"}
+        assert set(cluster_a_found.aggregated_arguments) == {
+            "Arg 1A.1",
+            "Arg 1A.2",
+            "Arg 2A.1",
+            "Arg 2A.2",
+        }
 
         # Check arguments for Cluster B
         assert set(cluster_b_found.aggregated_arguments) == {"Arg 1B.1", "Arg 1B.2"}
@@ -134,15 +149,21 @@ class TestProcessClusteringResult:
         empty_result = ClusteringResult(clusters=[])
         assert _process_clustering_result(empty_result, []) == []
 
-    def test_invalid_perspective_index_handling(self, sample_clustering_result, sample_flattened_perspectives):
+    def test_invalid_perspective_index_handling(
+            self, sample_clustering_result, sample_flattened_perspectives
+    ):
         # Create a result with an invalid index
         invalid_cluster = PerspectiveCluster(
             cluster_name="Invalid Cluster",
-            perspective_indices=[999]  # Index out of bounds
+            perspective_indices=[999],  # Index out of bounds
         )
-        test_clustering_result = ClusteringResult(clusters=sample_clustering_result.clusters + [invalid_cluster])
+        test_clustering_result = ClusteringResult(
+            clusters=sample_clustering_result.clusters + [invalid_cluster]
+        )
 
-        consolidated_list = _process_clustering_result(test_clustering_result, sample_flattened_perspectives)
+        consolidated_list = _process_clustering_result(
+            test_clustering_result, sample_flattened_perspectives
+        )
 
         invalid_cluster_found = None
         for cp in consolidated_list:
@@ -151,23 +172,29 @@ class TestProcessClusteringResult:
                 break
 
         assert invalid_cluster_found is not None
-        assert invalid_cluster_found.aggregated_arguments == []  # Should be empty as index is invalid
+        assert (
+                invalid_cluster_found.aggregated_arguments == []
+        )  # Should be empty as index is invalid
 
     def test_duplicate_arguments_are_unique(self, sample_flattened_perspectives):
         clustering_result = ClusteringResult(
             clusters=[
                 PerspectiveCluster(
                     cluster_name="Duplicate Arg Cluster",
-                    perspective_indices=[0, 2]  # Summary 1A and 2A share "Arg 1A.1"
+                    perspective_indices=[0, 2],  # Summary 1A and 2A share "Arg 1A.1"
                 )
             ]
         )
 
-        consolidated_list = _process_clustering_result(clustering_result, sample_flattened_perspectives)
-        
+        consolidated_list = _process_clustering_result(
+            clustering_result, sample_flattened_perspectives
+        )
+
         assert len(consolidated_list) == 1
         cluster = consolidated_list[0]
 
         # Check that "Arg 1A.1" appears only once
         assert cluster.aggregated_arguments.count("Arg 1A.1") == 1
-        assert len(cluster.aggregated_arguments) == 4  # Arg 1A.1, Arg 1A.2, Arg 2A.1, Arg 2A.2
+        assert (
+                len(cluster.aggregated_arguments) == 4
+        )  # Arg 1A.1, Arg 1A.2, Arg 2A.1, Arg 2A.2
