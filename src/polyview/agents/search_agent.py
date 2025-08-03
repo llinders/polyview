@@ -71,7 +71,11 @@ def process_results_node(state: State) -> dict:
 
     for message in state["messages"]:
         if isinstance(message, ToolMessage):
-            search_results = json.loads(message.content)
+            try:
+                search_results = json.loads(message.content)
+            except json.JSONDecodeError:
+                logger.warning(f"Skipping ToolMessage with invalid JSON content: {message.content!r}")
+                continue
             for res in search_results:
                 if res["url"] not in processed_urls:
                     articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
