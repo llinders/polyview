@@ -127,6 +127,23 @@ class TestProcessResultsNode:
         assert result["raw_articles"][0]["title"] == "A"
         assert result["raw_articles"][1]["title"] == "B"
 
+    def test_skips_tool_messages_with_invalid_json(self, empty_state):
+        messages = [ToolMessage(content="not-a-valid-json", tool_call_id="call_1")]
+        state = empty_state
+        state["messages"] = messages
+
+        result = process_results_node(state)
+        assert result["raw_articles"] == []
+
+    def test_skips_tool_messages_containing_an_error(self, empty_state):
+        error_message = {"error": "Tool failed to execute"}
+        messages = [ToolMessage(content=json.dumps(error_message), tool_call_id="call_1")]
+        state = empty_state
+        state["messages"] = messages
+
+        result = process_results_node(state)
+        assert result["raw_articles"] == []
+
 
 class TestShouldContinue:
     def test_returns_continue_when_tool_calls_are_present(self, empty_state):

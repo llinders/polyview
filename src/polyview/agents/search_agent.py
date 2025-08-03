@@ -54,7 +54,6 @@ def tool_node(state: State) -> dict:
             )
         except Exception as e:
             logger.error(f"Error executing tool {tool_call['name']}: {e}")
-            # Optionally, add an error message to the state
             tool_messages.append(
                 ToolMessage(
                     content=json.dumps({"error": str(e)}),
@@ -65,25 +64,41 @@ def tool_node(state: State) -> dict:
 
 
 def process_results_node(state: State) -> dict:
-    """Processes search results, removes duplicates, and adds them to the state."""
+    """
+    Processes search results from ToolMessages, removes duplicates,
+    and adds the valid articles to the state.
+    """
     articles = []
     processed_urls = set()
 
     for message in state["messages"]:
-        if isinstance(message, ToolMessage):
-            try:
-                search_results = json.loads(message.content)
-            except json.JSONDecodeError:
-                logger.warning(f"Skipping ToolMessage with invalid JSON content: {message.content!r}")
-                continue
-            if isinstance(search_results, list):
-                for res in search_results:
-                    if res["url"] not in processed_urls:
-                        articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
-                        processed_urls.add(res["url"])
-            elif isinstance(search_results, dict) and "error" in search_results:
-                logger.error(f"ToolMessage contained error: {search_results['error']}")
-                # Optionally, you could collect error messages or handle them differently
+        if not isinstance(message, ToolMessage):
+            continue
+
+        try:
+            content = json.loads(message.content)
+        except json.JSONDecodeError:
+            logger.warning(f"Skipping ToolMessage with invalid JSON: {message.content!r}")
+            continue
+
+        # Handle tool errors
+        if isinstance(content, dict) and "error" in content:
+            logger.error(f"Tool call failed with error: {content['error']}")
+            continue
+
+        # Process successful tool results
+        if not isinstance(content, list):
+            logger.warning(f"Skipping ToolMessage with non-list content: {content}")
+            continue
+
+        for res in content:
+            if isinstance(res, dict) and "url" in res:
+                if res["url"] not in processed_urls:
+                    articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
+                    processed_urls.add(res["url"])
+            else:
+                logger.warning(f"Skipping invalid item in search results: {res}")
+
 
     logger.info(f"Found {len(articles)} articles.")
     final_message = HumanMessage(content=f"Found {len(articles)} articles.")
