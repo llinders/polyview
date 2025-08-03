@@ -76,10 +76,14 @@ def process_results_node(state: State) -> dict:
             except json.JSONDecodeError:
                 logger.warning(f"Skipping ToolMessage with invalid JSON content: {message.content!r}")
                 continue
-            for res in search_results:
-                if res["url"] not in processed_urls:
-                    articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
-                    processed_urls.add(res["url"])
+            if isinstance(search_results, list):
+                for res in search_results:
+                    if res["url"] not in processed_urls:
+                        articles.append({**res, "id": hashlib.sha256(res["url"].encode()).hexdigest()})
+                        processed_urls.add(res["url"])
+            elif isinstance(search_results, dict) and "error" in search_results:
+                logger.error(f"ToolMessage contained error: {search_results['error']}")
+                # Optionally, you could collect error messages or handle them differently
 
     logger.info(f"Found {len(articles)} articles.")
     final_message = HumanMessage(content=f"Found {len(articles)} articles.")
