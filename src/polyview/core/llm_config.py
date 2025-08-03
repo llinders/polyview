@@ -13,5 +13,5 @@ llm_lite = ChatGoogleGenerativeAI(
     temperature=0.3,
     max_tokens=None,
     timeout=None,
-    max_retries=2
+    max_retries=2,
 )

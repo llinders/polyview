@@ -1,11 +1,9 @@
-from typing import List, Dict
-
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.tools import tool
 
 
 @tool
-def scrape_webpages(urls: List[str]) -> Dict[str, str]:
+def scrape_webpages(urls: list[str]) -> dict[str, str]:
     """
     Scrape the webpages from the given urls.
 

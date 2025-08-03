@@ -8,13 +8,17 @@ def setup_logging():
     """
     logger = logging.getLogger()
     logger.setLevel(os.environ.get("LOG_LEVEL", "WARNING").upper())
-    logging.getLogger("polyview").setLevel(os.environ.get("POLYVIEW_LOG_LEVEL", "DEBUG").upper())
+    logging.getLogger("polyview").setLevel(
+        os.environ.get("POLYVIEW_LOG_LEVEL", "DEBUG").upper()
+    )
 
     # Prevent adding multiple handlers if setup_logging is called more than once
     if not logger.handlers:
         console_handler = logging.StreamHandler()
 
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         console_handler.setFormatter(formatter)
 
         logger.addHandler(console_handler)

@@ -55,7 +55,7 @@ def summarize_node(state: State):
                   - Supporting rationale, if provided
                   - It's strengths and weaknesses
     
-                  Summary:"""
+                  Summary:""",
             ),
             (
                 "user",
@@ -63,8 +63,8 @@ def summarize_node(state: State):
                 ```json
                 {perspectives}
                 ```
-                """
-            )
+                """,
+            ),
         ]
     )
 

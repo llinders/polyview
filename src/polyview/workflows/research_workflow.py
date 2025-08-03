@@ -34,14 +34,14 @@ def research_supervisor_node(state: State) -> dict:
         return {
             "topic": topic,
             "iteration": 1,
-            "messages": [AIMessage(content=f"Starting research for '{topic}'.")]
+            "messages": [AIMessage(content=f"Starting research for '{topic}'.")],
         }
 
     iteration += 1
     logger.info(f"Beginning research cycle {iteration}.")
     return {
         "iteration": iteration,
-        "messages": [AIMessage(content=f"Running research cycle {iteration}...")]
+        "messages": [AIMessage(content=f"Running research cycle {iteration}...")],
     }
 
 
@@ -59,7 +59,8 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
     logger.info(
         f"Decision point: Iteration: {iteration}, "
         f"Articles: {len(raw_articles)} (need {MIN_ARTICLES_TO_SUMMARIZE}), "
-        f"Perspectives: {len(perspectives)} (need {MIN_PERSPECTIVES_TO_SUMMARIZE})")
+        f"Perspectives: {len(perspectives)} (need {MIN_PERSPECTIVES_TO_SUMMARIZE})"
+    )
 
     if iteration >= MAX_ITERATIONS:
         logger.info("Decision: Max iterations reached. Continuing.")
@@ -70,7 +71,9 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
         has_enough_perspectives = len(perspectives) >= MIN_PERSPECTIVES_TO_SUMMARIZE
 
         if has_enough_articles and has_enough_perspectives:
-            logger.info("Decision: Sufficient articles and perspectives found. Continuing.")
+            logger.info(
+                "Decision: Sufficient articles and perspectives found. Continuing."
+            )
             return "debug_state"
 
     logger.info("Decision: More data or perspectives needed. Continuing research.")
@@ -99,10 +102,7 @@ workflow.add_node("perspective_identification", perspective_identification)
 #  perspective elaboration if new arguments are present for resynthesis of the final perspective
 
 workflow.set_entry_point("supervisor")
-workflow.add_conditional_edges(
-    "supervisor",
-    decide_what_to_do
-)
+workflow.add_conditional_edges("supervisor", decide_what_to_do)
 workflow.add_edge("search_agent", "perspective_identification")
 workflow.add_edge("perspective_identification", "supervisor")
 workflow.set_finish_point("debug_state")

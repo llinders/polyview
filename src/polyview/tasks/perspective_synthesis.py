@@ -1,17 +1,15 @@
-from typing import List
-
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 from polyview.core.llm_config import llm
 from polyview.core.logging import get_logger
-from polyview.core.state import State, FinalPerspective
+from polyview.core.state import FinalPerspective, State
 
 logger = get_logger(__name__)
 
 
 class FinalPerspectives(BaseModel):
-    final_perspectives: List[FinalPerspective]
+    final_perspectives: list[FinalPerspective]
 
 
 def perspective_synthesis_node(state: State) -> dict:
@@ -25,11 +23,14 @@ def perspective_synthesis_node(state: State) -> dict:
     consolidated_perspectives = state.get("consolidated_perspectives")
 
     if not consolidated_perspectives:
-        logger.info("No consolidated perspectives found for synthesis. Skipping synthesis node..")
+        logger.info(
+            "No consolidated perspectives found for synthesis. Skipping synthesis node.."
+        )
         return {"final_perspectives": []}
 
     logger.info(
-        f"--- Synthesizing arguments for {len(consolidated_perspectives)} consolidated perspectives in one go ---")
+        f"--- Synthesizing arguments for {len(consolidated_perspectives)} consolidated perspectives in one go ---"
+    )
 
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -44,11 +45,11 @@ For each perspective provided, you must perform the following steps:
 4.  **Determine Strengths and Weaknesses**: Analyze the `core_arguments` and `supporting_evidence`. Identify the `strengths` (e.g., well-supported by evidence, logically consistent) and `weaknesses` (e.g., relies on unstated assumptions, lacks evidence for key claims) of the perspective.
 
 Your output must be a list of `FinalPerspective` objects, fully populated.
-"""
+""",
             ),
             (
                 "human",
-                """Please synthesize the following aggregated perspectives into a final analysis:\n\n{perspectives_json}"""
+                """Please synthesize the following aggregated perspectives into a final analysis:\n\n{perspectives_json}""",
             ),
         ]
     )
@@ -57,14 +58,19 @@ Your output must be a list of `FinalPerspective` objects, fully populated.
     chain = prompt | structured_llm
 
     try:
-        final_perspectives_obj: FinalPerspectives = chain.invoke({"perspectives_json": consolidated_perspectives})
+        final_perspectives_obj: FinalPerspectives = chain.invoke(
+            {"perspectives_json": consolidated_perspectives}
+        )
         logger.info(
-            f"Successfully synthesized arguments for {len(final_perspectives_obj.final_perspectives)} perspectives.")
+            f"Successfully synthesized arguments for {len(final_perspectives_obj.final_perspectives)} perspectives."
+        )
         logger.debug(f"Final perspectives: {final_perspectives_obj}")
 
     except Exception as e:
-        logger.error(f"Error synthesizing arguments for all perspectives: {e}\n"
-                     f"Using consolidated perspectives as backup")
+        logger.error(
+            f"Error synthesizing arguments for all perspectives: {e}\n"
+            f"Using consolidated perspectives as backup"
+        )
         return {"final_perspectives": []}
 
     return {"final_perspectives": final_perspectives_obj.final_perspectives}

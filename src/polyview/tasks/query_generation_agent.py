@@ -1,8 +1,8 @@
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from polyview.core.logging import get_logger
 from polyview.core.llm_config import llm
+from polyview.core.logging import get_logger
 from polyview.core.state import State
 
 logger = get_logger(__name__)
@@ -16,7 +16,9 @@ def query_generation_agent(state: State) -> dict:
     topic = state.get("topic")
     iteration = state.get("iteration", 1)
 
-    logger.info(f"Query Generation Agent: Generating queries for '{topic}' (Iteration {iteration}).")
+    logger.info(
+        f"Query Generation Agent: Generating queries for '{topic}' (Iteration {iteration})."
+    )
 
     if iteration == 1:
         # TODO: Refine prompt
@@ -48,12 +50,20 @@ def query_generation_agent(state: State) -> dict:
         response_text = query_chain.invoke({"topic": topic})
         logger.debug(f"Response text: {response_text!r}")
         # Split by newline character (\n) and clean whitespace
-        queries = [q.strip() for q in response_text.split('\n') if q.strip()]
+        queries = [q.strip() for q in response_text.split("\n") if q.strip()]
         if not queries:
-            raise Exception(f"No queries generated from original response_text: {response_text}")
+            raise Exception(
+                f"No queries generated from original response_text: {response_text}"
+            )
     except Exception as e:
-        logger.error(f"Error generating queries with LLM: {e}. Falling back to default queries.")
-        queries = [f"{topic} overview", f"{topic} key facts", f"{topic} all perspectives"]
+        logger.error(
+            f"Error generating queries with LLM: {e}. Falling back to default queries."
+        )
+        queries = [
+            f"{topic} overview",
+            f"{topic} key facts",
+            f"{topic} all perspectives",
+        ]
 
     logger.info(f"Query Generation Agent: Generated queries: {queries}")
     return {"search_queries": queries}
