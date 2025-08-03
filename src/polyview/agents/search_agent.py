@@ -2,7 +2,7 @@ import hashlib
 import json
 from typing import Literal
 
-from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph
@@ -84,7 +84,8 @@ def process_results_node(state: State) -> dict:
 
 def should_continue(state: State) -> Literal["continue", "end"]:
     """Router that decides where to go next."""
-    if state["messages"][-1].tool_calls:
+    last_message = state["messages"][-1]
+    if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return "continue"
     return "end"
 
