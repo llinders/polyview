@@ -58,7 +58,7 @@ def state_with_tool_messages(empty_state: State) -> State:
 class TestToolNode:
     @patch("polyview.agents.search_agent.search_tool")
     def test_returns_empty_list_when_no_tool_calls_are_present(
-            self, mock_search_tool, empty_state
+        self, mock_search_tool, empty_state
     ):
         state = empty_state
         state["messages"] = [AIMessage(content="No tools needed.")]
@@ -115,7 +115,7 @@ class TestToolNode:
 
 class TestProcessResultsNode:
     def test_correctly_extracts_articles_from_tool_messages(
-            self, state_with_tool_messages
+        self, state_with_tool_messages
     ):
         result = process_results_node(state_with_tool_messages)
         assert len(result["raw_articles"]) == 3

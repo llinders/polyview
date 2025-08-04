@@ -38,7 +38,7 @@ def mock_llm_response():
 @patch("polyview.tasks.perspective_identification.ChatPromptTemplate")
 @patch("polyview.tasks.perspective_identification.llm")
 def test_perspective_identification_success(
-        mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response
+    mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response
 ):
     mock_structured_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_structured_llm
@@ -60,7 +60,7 @@ def test_perspective_identification_success(
 @patch("polyview.tasks.perspective_identification.ChatPromptTemplate")
 @patch("polyview.tasks.perspective_identification.llm")
 def test_perspective_identification_llm_failure(
-        mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response
+    mock_llm, mock_prompt_template, sample_raw_articles, mock_llm_response
 ):
     mock_structured_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_structured_llm
