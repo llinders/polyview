@@ -14,6 +14,10 @@ identifies different viewpoints, gathers supporting arguments and facts, and pre
    ```bash
    poetry install
    ```
+3. Setup pre-commit hooks:
+   ```bash
+   pre-commit install
+   ```
 
 ## Usage
 To test and run the workflows, use LangGraph Studio:
