@@ -94,7 +94,7 @@ workflow.add_conditional_edges(
     {
         "search_agent": "search_agent",
         "debug_state": "debug_state",
-    }
+    },
 )
 workflow.add_edge("search_agent", "perspective_analysis")
 workflow.add_edge("perspective_analysis", "supervisor")
