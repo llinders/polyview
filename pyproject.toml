@@ -24,6 +24,7 @@ dependencies = [
 langgraph-cli = { extras = ["inmem"], version = "^0.3.5" }
 pytest = "^8.4.1"
 ruff = "^0.12.7"
+pre-commit = "^4.2.0"
 
 
 [build-system]
@@ -38,10 +39,11 @@ addopts = "-m \"not integration\""
 
 
 [tool.ruff]
-line-length = 88  # Black-compatible
+line-length = 88
 target-version = "py313"
 fix = true
 unsafe-fixes = false
+src = ["src", "tests"]
 
 exclude = [
     ".git",
@@ -52,11 +54,6 @@ exclude = [
     "build",
     "dist",
 ]
-
-[tool.ruff.lint.isort]
-known-first-party = ["polyview"]
-combine-as-imports = true
-force-sort-within-sections = true
 
 [tool.ruff.lint]
 select = [
@@ -74,8 +71,20 @@ select = [
 ]
 
 ignore = [
-    "E501", # Line length (handled by Black)
+    "E501", # Predefined line length: ignore to have control over line length with ruff
     "A003", # Allow class attribute 'id' even though it shadows built-in
 ]
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["polyview"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+skip-magic-trailing-comma = false
+docstring-code-format = true
