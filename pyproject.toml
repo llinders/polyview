@@ -71,7 +71,7 @@ select = [
 ]
 
 ignore = [
-    "E501", # Predefined line length: ignore to have control over line length with ruff
+    "E501", # Line length (controlled by Ruff): ignore E501 to manage line length via Ruff
     "A003", # Allow class attribute 'id' even though it shadows built-in
 ]
 fixable = ["ALL"]
