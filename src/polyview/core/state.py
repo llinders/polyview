@@ -18,8 +18,8 @@ class ExtractedPerspective(BaseModel):
 
     perspective_summary: str = Field(
         description="A concise summary of a distinct viewpoint expressed in the article. (e.g., 'Scientific Consensus', 'Techno-Optimist', "
-                    "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
-                    "'Conservative', 'Liberal', etc.)"
+        "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
+        "'Conservative', 'Liberal', etc.)"
     )
     key_arguments: list[str] = Field(
         description="A list of the main claims, rationales, or evidence supporting this perspective, as described in the article."
@@ -53,8 +53,8 @@ class ConsolidatedPerspective(BaseModel):
 
     perspective_name: str = Field(
         description="A short descriptive name for the perspective (e.g., 'Scientific Consensus', 'Techno-Optimist', "
-                    "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
-                    "'Conservative', 'Liberal', etc.)"
+        "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
+        "'Conservative', 'Liberal', etc.)"
     )
     aggregated_arguments: list[str] = Field(
         description="The combined list of all key arguments from the clustered perspectives."
@@ -78,8 +78,8 @@ class FinalPerspective(BaseModel):
 
     perspective_name: str = Field(
         description="A short descriptive name for the perspective (e.g., 'Scientific Consensus', 'Techno-Optimist', "
-                    "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
-                    "'Conservative', 'Liberal', etc.)"
+        "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
+        "'Conservative', 'Liberal', etc.)"
     )
     narrative: str
     core_arguments: list[str]

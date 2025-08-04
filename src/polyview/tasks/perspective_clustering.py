@@ -18,8 +18,8 @@ class PerspectiveCluster(BaseModel):
 
     cluster_name: str = Field(
         description="A short, descriptive name for the cluster (e.g., 'Scientific Consensus', 'Techno-Optimist', "
-                    "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
-                    "'Conservative', 'Liberal', etc. The name should immediately convey the essence of the perspective."
+        "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
+        "'Conservative', 'Liberal', etc. The name should immediately convey the essence of the perspective."
     )
     perspective_indices: list[int] = Field(
         description="The list of indices corresponding to the original perspectives that belong to this cluster."
@@ -33,7 +33,7 @@ class ClusteringResult(BaseModel):
 
 
 def _flatten_perspectives(
-        article_perspectives_list: list[ArticlePerspectives],
+    article_perspectives_list: list[ArticlePerspectives],
 ) -> list[ExtractedPerspective]:
     """
     Flattens a list of ArticlePerspectives into a single list of ExtractedPerspective objects.
@@ -51,7 +51,7 @@ def _flatten_perspectives(
 
 
 def _format_perspectives_for_prompt(
-        all_perspectives: list[ExtractedPerspective],
+    all_perspectives: list[ExtractedPerspective],
 ) -> list[dict]:
     """Formats perspectives for the LLM prompt, including their original index and summary."""
     return [
@@ -61,7 +61,7 @@ def _format_perspectives_for_prompt(
 
 
 def _process_clustering_result(
-        result: ClusteringResult, all_perspectives: list[ExtractedPerspective]
+    result: ClusteringResult, all_perspectives: list[ExtractedPerspective]
 ) -> list[ConsolidatedPerspective]:
     """Processes the clustering result to consolidate arguments for each cluster."""
     consolidated_perspectives: list[ConsolidatedPerspective] = []

@@ -1,6 +1,5 @@
-from polyview.workflows.search_and_perspective_identification import graph
-
 from polyview.core.logging import get_logger
+from polyview.workflows.search_and_perspective_identification import graph
 
 logger = get_logger(__name__)
 

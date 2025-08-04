@@ -56,7 +56,7 @@ def sample_extracted_perspectives_data() -> list[ArticlePerspectives]:
 
 @pytest.fixture
 def sample_flattened_perspectives(
-        sample_extracted_perspectives_data,
+    sample_extracted_perspectives_data,
 ) -> list[ExtractedPerspective]:
     return _flatten_perspectives(sample_extracted_perspectives_data)
 
@@ -111,7 +111,7 @@ class TestFormatPerspectivesForPrompt:
 
 class TestProcessClusteringResult:
     def test_basic_consolidation(
-            self, sample_clustering_result, sample_flattened_perspectives
+        self, sample_clustering_result, sample_flattened_perspectives
     ):
         consolidated_list = _process_clustering_result(
             sample_clustering_result, sample_flattened_perspectives
@@ -150,7 +150,7 @@ class TestProcessClusteringResult:
         assert _process_clustering_result(empty_result, []) == []
 
     def test_invalid_perspective_index_handling(
-            self, sample_clustering_result, sample_flattened_perspectives
+        self, sample_clustering_result, sample_flattened_perspectives
     ):
         # Create a result with an invalid index
         invalid_cluster = PerspectiveCluster(
@@ -173,7 +173,7 @@ class TestProcessClusteringResult:
 
         assert invalid_cluster_found is not None
         assert (
-                invalid_cluster_found.aggregated_arguments == []
+            invalid_cluster_found.aggregated_arguments == []
         )  # Should be empty as index is invalid
 
     def test_duplicate_arguments_are_unique(self, sample_flattened_perspectives):
@@ -196,5 +196,5 @@ class TestProcessClusteringResult:
         # Check that "Arg 1A.1" appears only once
         assert cluster.aggregated_arguments.count("Arg 1A.1") == 1
         assert (
-                len(cluster.aggregated_arguments) == 4
+            len(cluster.aggregated_arguments) == 4
         )  # Arg 1A.1, Arg 1A.2, Arg 2A.1, Arg 2A.2
