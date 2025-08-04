@@ -3,8 +3,13 @@ from pydantic import BaseModel, Field
 
 from polyview.core.llm_config import llm
 from polyview.core.logging import get_logger
-from polyview.core.state import State, ConsolidatedPerspective, ExtractedPerspective, ArticlePerspectives, \
-    FinalPerspective
+from polyview.core.state import (
+    ArticlePerspectives,
+    ConsolidatedPerspective,
+    ExtractedPerspective,
+    FinalPerspective,
+    State,
+)
 
 logger = get_logger(__name__)
 
@@ -56,22 +61,23 @@ def _format_perspectives_for_prompt(
     ]
 
 
-def _create_synthesis_prompt(cluster_name: str, aggregated_narratives: list[str]) -> str:
+def _create_synthesis_prompt(
+    cluster_name: str, aggregated_narratives: list[str]
+) -> str:
     """Creates a prompt for synthesizing a narrative from a list of narratives."""
     synthesis_prompt = ChatPromptTemplate.from_template(
         "Create a brief, synthesized narrative (1-2 paragraphs) from the following collected narratives for the perspective: '{cluster_name}'.\n\n---\n{narratives}\n---"
     )
     synthesis_chain = synthesis_prompt | llm
-    return synthesis_chain.invoke({
-        "cluster_name": cluster_name,
-        "narratives": "\n\n".join(aggregated_narratives)
-    }).content
+    return synthesis_chain.invoke(
+        {"cluster_name": cluster_name, "narratives": "\n\n".join(aggregated_narratives)}
+    ).content
 
 
 def _process_clustering_result(
-        result: ClusteringResult,
-        all_perspectives: list[ExtractedPerspective],
-        existing_perspectives: list[FinalPerspective]
+    result: ClusteringResult,
+    all_perspectives: list[ExtractedPerspective],
+    existing_perspectives: list[FinalPerspective],
 ) -> list[ConsolidatedPerspective]:
     """Processes the clustering result to consolidate arguments for each cluster."""
     consolidated_perspectives: list[ConsolidatedPerspective] = []
@@ -83,7 +89,10 @@ def _process_clustering_result(
         supporting_evidence = []
 
         # Check if the cluster corresponds to an existing perspective
-        existing_perspective = next((p for p in existing_perspectives if p.perspective_name == cluster_name), None)
+        existing_perspective = next(
+            (p for p in existing_perspectives if p.perspective_name == cluster_name),
+            None,
+        )
 
         if existing_perspective:
             # If it is an existing perspective, we add the new arguments to it
@@ -98,7 +107,9 @@ def _process_clustering_result(
                 aggregated_narratives.append(perspective.contextual_narrative)
                 supporting_evidence.extend(perspective.evidence_provided)
 
-        preliminary_synthesis = _create_synthesis_prompt(cluster_name, aggregated_narratives)
+        preliminary_synthesis = _create_synthesis_prompt(
+            cluster_name, aggregated_narratives
+        )
 
         consolidated_perspectives.append(
             ConsolidatedPerspective(
@@ -152,10 +163,12 @@ New perspectives to cluster:
 {perspectives}
 ```"""
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("human", human_prompt),
-    ])
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", human_prompt),
+        ]
+    )
 
     structured_llm = llm.with_structured_output(ClusteringResult)
     chain = prompt | structured_llm
@@ -179,12 +192,20 @@ New perspectives to cluster:
     logger.info(f"--- Clustering {len(all_perspectives)} perspectives ---")
 
     if iteration > 1 and existing_perspectives:
-        existing_perspectives_json = [p.model_dump_json(indent=2) for p in existing_perspectives]
+        existing_perspectives_json = [
+            p.model_dump_json(indent=2) for p in existing_perspectives
+        ]
         result = chain.invoke(
-            {"perspectives": perspectives_for_prompt, "existing_perspectives": existing_perspectives_json})
+            {
+                "perspectives": perspectives_for_prompt,
+                "existing_perspectives": existing_perspectives_json,
+            }
+        )
     else:
         result = chain.invoke({"perspectives": perspectives_for_prompt})
 
-    consolidated_perspectives = _process_clustering_result(result, all_perspectives, existing_perspectives)
+    consolidated_perspectives = _process_clustering_result(
+        result, all_perspectives, existing_perspectives
+    )
 
     return {"consolidated_perspectives": consolidated_perspectives}
