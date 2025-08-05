@@ -2,13 +2,17 @@ import asyncio
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, WebSocket, WebSocketDisconnect
+from starlette.status import WS_1008_POLICY_VIOLATION
 
 from polyview.api.models import AnalysisRequest, AnalysisResponse
+from polyview.core.logging import get_logger
 from polyview.workflows.research_workflow import graph as research_workflow_graph
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
-# In-memory storage for active WebSocket connections and message queues
+# In-memory storage for active WebSocket connections and message queues (consider replacing with Redis in the future)
 active_connections: dict[str, list[WebSocket]] = {}
 session_message_queues: dict[str, asyncio.Queue] = {}
 
@@ -33,7 +37,8 @@ async def run_analysis_workflow(session_id: str, topic: str):
 
         # Stream the workflow execution
         async for state in research_workflow_graph.astream(initial_state):
-            final_state = state  # Capture the latest state
+            logger.debug(f"Research workflow state: {state}")
+            final_state = state
             current_node = list(state.keys())[-1]  # Get the last node that ran
 
             # Send a status update for each node completion
@@ -84,6 +89,7 @@ async def run_analysis_workflow(session_id: str, topic: str):
         )
 
     except Exception as e:
+        logger.error(f"Error running analysis workflow: {e}")
         await queue.put({"type": "error", "message": f"Analysis failed: {str(e)}"})
     finally:
         await queue.put({"type": "end_of_stream"})
@@ -104,7 +110,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     await websocket.accept()
     if session_id not in active_connections:
         # If session_id is not known, close connection or handle error
-        await websocket.close(code=1008)  # Policy Violation
+        await websocket.close(code=WS_1008_POLICY_VIOLATION)
         return
 
     active_connections[session_id].append(websocket)
@@ -118,15 +124,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 break
             await websocket.send_json(message)
     except WebSocketDisconnect:
-        print(f"WebSocket disconnected for session {session_id}")
+        logger.warning(f"WebSocket disconnected for session {session_id}")
     except Exception as e:
-        print(f"WebSocket error for session {session_id}: {e}")
+        logger.error(f"WebSocket error for session {session_id}: {e}")
     finally:
         # Clean up connection
         if websocket in active_connections[session_id]:
             active_connections[session_id].remove(websocket)
         if not active_connections[session_id]:
-            # If no more active connections for this session, clean up queue
+            # If no more active connections for this session, clean up the queue
             del session_message_queues[session_id]
             del active_connections[session_id]
         await websocket.close()
