@@ -89,7 +89,7 @@ def _process_clustering_result(
         supporting_evidence = []
 
         # Check if the cluster corresponds to an existing perspective
-        existing_perspective = next(
+        existing_perspective: FinalPerspective | None = next(
             (p for p in existing_perspectives if p.perspective_name == cluster_name),
             None,
         )
@@ -97,8 +97,8 @@ def _process_clustering_result(
         if existing_perspective:
             # If it is an existing perspective, we add the new arguments to it
             aggregated_arguments.extend(existing_perspective.core_arguments)
-            aggregated_narratives.append(existing_perspective.narrative)
-            supporting_evidence.extend(existing_perspective.strengths)
+            aggregated_narratives.extend(existing_perspective.narrative)
+            supporting_evidence.extend(existing_perspective.supporting_evidence)
 
         for index in cluster.perspective_indices:
             if 0 <= index < len(all_perspectives):

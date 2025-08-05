@@ -83,6 +83,7 @@ class FinalPerspective(BaseModel):
     )
     narrative: str
     core_arguments: list[str]
+    supporting_evidence: list[str]
     common_assumptions: list[str]
     strengths: list[str]
     weaknesses: list[str]
