@@ -33,6 +33,7 @@ def mock_llm_response():
                 common_assumptions=[],
                 strengths=[],
                 weaknesses=[],
+                supporting_evidence=[],
             )
         ]
     )

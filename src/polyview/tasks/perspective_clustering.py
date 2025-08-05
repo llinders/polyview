@@ -78,6 +78,7 @@ def _process_clustering_result(
     result: ClusteringResult,
     all_perspectives: list[ExtractedPerspective],
     existing_perspectives: list[FinalPerspective],
+    iteration: int,
 ) -> list[ConsolidatedPerspective]:
     """Processes the clustering result to consolidate arguments for each cluster."""
     consolidated_perspectives: list[ConsolidatedPerspective] = []
@@ -95,10 +96,15 @@ def _process_clustering_result(
         )
 
         if existing_perspective:
+            logger.info(
+                f"Updating existing perspective '{cluster_name}' with new article perspectives."
+            )
             # If it is an existing perspective, we add the new arguments to it
             aggregated_arguments.extend(existing_perspective.core_arguments)
-            aggregated_narratives.extend(existing_perspective.narrative)
+            aggregated_narratives.append(existing_perspective.narrative)
             supporting_evidence.extend(existing_perspective.supporting_evidence)
+        elif not existing_perspective and iteration > 1:
+            logger.info(f"Creating new perspective '{cluster_name}' from new articles.")
 
         for index in cluster.perspective_indices:
             if 0 <= index < len(all_perspectives):
@@ -121,7 +127,7 @@ def _process_clustering_result(
             )
         )
         logger.info(
-            f"Created cluster '{cluster_name}' with {len(aggregated_arguments)} arguments."
+            f"Processed cluster '{cluster_name}' with {len(aggregated_arguments)} arguments."
         )
     return consolidated_perspectives
 
@@ -133,7 +139,11 @@ def perspective_clustering_node(state: State) -> dict:
     On subsequent runs, it can cluster new perspectives into existing ones.
     """
     iteration = state.get("iteration", 1)
-    existing_perspectives = state.get("final_perspectives", [])
+    raw_existing_perspectives = state.get("final_perspectives", [])
+    existing_perspectives = [
+        FinalPerspective.model_validate(p) if isinstance(p, dict) else p
+        for p in raw_existing_perspectives
+    ]
 
     system_prompt = """You are an advanced analytical AI specializing in synthesizing diverse viewpoints into coherent, distinct perspectives. Your primary goal is to group a given list of individual perspective summaries into semantically similar clusters. Each cluster should represent a unique, meaningful, and well-defined core argument or viewpoint on the topic.
 
@@ -205,7 +215,7 @@ New perspectives to cluster:
         result = chain.invoke({"perspectives": perspectives_for_prompt})
 
     consolidated_perspectives = _process_clustering_result(
-        result, all_perspectives, existing_perspectives
+        result, all_perspectives, existing_perspectives, iteration
     )
 
     return {"consolidated_perspectives": consolidated_perspectives}

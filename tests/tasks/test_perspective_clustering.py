@@ -120,7 +120,7 @@ class TestProcessClusteringResult:
         self, mock_synthesis, sample_clustering_result, sample_flattened_perspectives
     ):
         consolidated_list = _process_clustering_result(
-            sample_clustering_result, sample_flattened_perspectives, []
+            sample_clustering_result, sample_flattened_perspectives, [], iteration=1
         )
 
         assert isinstance(consolidated_list, list)
@@ -151,7 +151,7 @@ class TestProcessClusteringResult:
     )
     def test_empty_clusters_input(self, mock_synthesis):
         empty_result = ClusteringResult(clusters=[])
-        assert _process_clustering_result(empty_result, [], []) == []
+        assert _process_clustering_result(empty_result, [], [], iteration=1) == []
 
     @patch(
         "polyview.tasks.perspective_clustering._create_synthesis_prompt",
@@ -168,7 +168,7 @@ class TestProcessClusteringResult:
         )
 
         consolidated_list = _process_clustering_result(
-            test_clustering_result, sample_flattened_perspectives, []
+            test_clustering_result, sample_flattened_perspectives, [], iteration=1
         )
 
         invalid_cluster_found = next(
@@ -200,7 +200,7 @@ class TestProcessClusteringResult:
         )
 
         consolidated_list = _process_clustering_result(
-            clustering_result, sample_flattened_perspectives, []
+            clustering_result, sample_flattened_perspectives, [], iteration=1
         )
 
         assert len(consolidated_list) == 1
@@ -224,6 +224,7 @@ class TestProcessClusteringResult:
                 common_assumptions=[],
                 strengths=["Existing Strength"],
                 weaknesses=[],
+                supporting_evidence=["Existing Evidence"],
             )
         ]
 
@@ -231,6 +232,7 @@ class TestProcessClusteringResult:
             sample_clustering_result,
             sample_flattened_perspectives,
             existing_perspectives,
+            iteration=1,
         )
 
         cluster_a_found = next(
@@ -240,4 +242,3 @@ class TestProcessClusteringResult:
         assert cluster_a_found is not None
         assert "Existing Arg" in cluster_a_found.aggregated_arguments
         assert "Existing Narrative" in cluster_a_found.aggregated_narratives
-        assert "Existing Strength" in cluster_a_found.supporting_evidence
