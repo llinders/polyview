@@ -62,7 +62,7 @@ def decide_what_to_do(state: State) -> Literal["search_agent", "debug_state"]:
         f"Perspectives: {len(perspectives)} (need {MIN_PERSPECTIVES_TO_SUMMARIZE})"
     )
 
-    if iteration >= MAX_ITERATIONS:
+    if iteration > MAX_ITERATIONS:
         logger.info("Decision: Max iterations reached. Continuing.")
         return "debug_state"
 
