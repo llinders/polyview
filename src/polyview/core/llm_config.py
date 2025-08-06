@@ -1,17 +1,17 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from polyview.utils.llm import ChatGoogleGenerativeAIWithDelayedRetry
 
-llm = ChatGoogleGenerativeAI(
+llm = ChatGoogleGenerativeAIWithDelayedRetry(
     model="gemini-2.5-flash",
     temperature=0,
     max_tokens=None,
     timeout=None,
-    max_retries=2,
+    max_retries=0,
 )
 
-llm_lite = ChatGoogleGenerativeAI(
+llm_lite = ChatGoogleGenerativeAIWithDelayedRetry(
     model="gemini-2.5-flash-lite-preview-06-17",
     temperature=0.3,
     max_tokens=None,
     timeout=None,
-    max_retries=2,
+    max_retries=0,
 )
