@@ -1,6 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from .retry import gemini_api_delayed_retry
+from polyview.utils.retry import gemini_api_delayed_retry
 
 
 class ChatGoogleGenerativeAIWithDelayedRetry(ChatGoogleGenerativeAI):
