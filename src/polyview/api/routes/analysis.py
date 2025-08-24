@@ -25,7 +25,7 @@ async def run_analysis_workflow(session_id: str, topic: str):
     if not queue:
         return
 
-    final_state = {}
+    final_state: dict = {}
 
     try:
         await queue.put(
@@ -37,9 +37,14 @@ async def run_analysis_workflow(session_id: str, topic: str):
 
         # Stream the workflow execution
         async for state in research_workflow_graph.astream(initial_state):
-            logger.debug(f"Research workflow state: {state}")
-            final_state = state
-            current_node = list(state.keys())[-1]  # Get the last node that ran
+            current_node = list(state.keys())[
+                -1
+            ]  # Get the name of the last node that ran
+            node_data: dict = state[current_node]
+            final_state = node_data
+            logger.debug(
+                f"Research workflow state: Node '{current_node}' with keys: {list(node_data.keys())}."
+            )
 
             # Send a status update for each node completion
             await queue.put(
@@ -49,25 +54,34 @@ async def run_analysis_workflow(session_id: str, topic: str):
                 }
             )
 
-            if "iteration" in state:
+            if "iteration" in node_data:
+                logger.debug(
+                    f"Sending iteration status update: {node_data['iteration']}"
+                )
                 await queue.put(
                     {
                         "type": "status",
-                        "message": f"Current iteration: {state['iteration']}",
+                        "message": f"Current iteration: {node_data['iteration']}",
                     }
                 )
-            if "raw_articles" in state:
+            if "raw_articles" in node_data:
+                logger.debug(
+                    f"Sending article status update: {len(node_data['raw_articles'])}"
+                )
                 await queue.put(
                     {
                         "type": "status",
-                        "message": f"Articles found: {len(state['raw_articles']) if state['raw_articles'] else 0}",
+                        "message": f"Articles found: {len(node_data['raw_articles']) if node_data['raw_articles'] else 0}",
                     }
                 )
-            if "final_perspectives" in state:
+            if "final_perspectives" in node_data:
+                logger.debug(
+                    f"Sending perspective status update: {len(node_data['final_perspectives'])}"
+                )
                 await queue.put(
                     {
                         "type": "status",
-                        "message": f"Perspectives identified: {len(state['final_perspectives']) if state['final_perspectives'] else 0}",
+                        "message": f"Perspectives identified: {len(node_data['final_perspectives']) if node_data['final_perspectives'] else 0}",
                     }
                 )
 
