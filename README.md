@@ -20,13 +20,25 @@ identifies different viewpoints, gathers supporting arguments and facts, and pre
    ```
 
 ## Usage
-To test and run the workflows, use LangGraph Studio:
+To set up the environment, run both the FastAPI backend and the React frontend.
+```bash
+uvicorn polyview.api.main:app --host 0.0.0.0 --port 8000
+```
+```bash
+cd frontend
+npm run dev
+```
+You can then visit https://localhost:5173 to use the webapp.
+
+## Testing
+### LangGraph Studio
+To test, run, and debug the workflows, use LangGraph Studio:
 
 ```bash
 poetry run langgraph dev
 ```
 
-## Testing
+### Automated tests
 The project contains both unit and integration tests. The test directory structure mirrors the `src` directory:
 - **Unit Tests:** Located in `tests/`. For a source file like `src/polyview/tasks/some_task.py`, the corresponding unit
   test is `tests/tasks/test_some_task.py`.
