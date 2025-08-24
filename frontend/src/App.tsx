@@ -1,5 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './App.css';
+import PerspectiveCard from './components/PerspectiveCard';
+import SummaryView from './components/SummaryView';
+import FollowUpInput from './components/FollowUpInput';
 
 interface AnalysisMessage {
   type: 'status' | 'partial_result' | 'final_result' | 'error' | 'end_of_stream';
@@ -45,6 +48,7 @@ function App() {
           setMessages((prev) => [...prev, `Partial Result: ${JSON.stringify(msg.data)}`]);
         } else if (msg.type === 'final_result') {
           setMessages((prev) => [...prev, 'Analysis complete!']);
+          console.log('Final Result:', msg.data);
           setFinalResult(msg.data);
           setIsLoading(false);
         } else if (msg.type === 'error') {
@@ -105,6 +109,20 @@ function App() {
     }
   };
 
+  const loadMockData = async () => {
+    setIsLoading(true);
+    setMessages(['Loading mock data...']);
+    try {
+      const response = await fetch('/src/mock-data.json');
+      const data = await response.json();
+      setFinalResult(data);
+      setMessages(['Mock data loaded successfully!']);
+    } catch (error) {
+      setMessages([`Failed to load mock data: ${error}`]);
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -122,6 +140,9 @@ function App() {
           <button onClick={startAnalysis} disabled={isLoading}>
             {isLoading ? 'Analyzing...' : 'Start Analysis'}
           </button>
+          <button onClick={loadMockData} disabled={isLoading} className="mock-data-btn">
+            Load Mock Data
+          </button>
         </div>
 
         <div className="messages-section">
@@ -137,42 +158,17 @@ function App() {
 
         {finalResult && (
           <div className="results-section">
-            <h2>Analysis Results for "{finalResult.topic}"</h2>
-            <h3>Summary:</h3>
-            <p>{finalResult.summary}</p>
-            <h3>Perspectives:</h3>
-            {finalResult.perspectives && finalResult.perspectives.length > 0 ? (
-              <ul>
-                {finalResult.perspectives.map((p: any, index: number) => (
-                  <li key={index}>
-                    <h4>{p.perspective_name}</h4>
-                    <p>{p.narrative}</p>
-                    {p.core_arguments && p.core_arguments.length > 0 && (
-                      <>
-                        <h5>Core Arguments:</h5>
-                        <ul>
-                          {p.core_arguments.map((arg: string, argIndex: number) => (
-                            <li key={argIndex}>{arg}</li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    {p.supporting_evidence && p.supporting_evidence.length > 0 && (
-                      <>
-                        <h5>Supporting Evidence:</h5>
-                        <ul>
-                          {p.supporting_evidence.map((evidence: string, evIndex: number) => (
-                            <li key={evIndex}>{evidence}</li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No perspectives found.</p>
-            )}
+            <SummaryView topic={finalResult.topic} summary={finalResult.summary} />
+            <div className="perspectives-grid">
+              {finalResult.perspectives && finalResult.perspectives.length > 0 ? (
+                finalResult.perspectives.map((p: any, index: number) => (
+                  <PerspectiveCard key={index} perspective={p} />
+                ))
+              ) : (
+                <p>No perspectives found.</p>
+              )}
+            </div>
+            <FollowUpInput />
           </div>
         )}
       </main>
