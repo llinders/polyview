@@ -1,19 +1,21 @@
 
 import type { AnalysisReport } from './types';
 import mockData from '../mock-data.json';
+import { ANALYSIS_STEPS } from '../constants';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 const WS_BASE_URL = 'ws://localhost:8000/api/v1/ws';
 
-interface AnalysisMessage {
+export interface AnalysisMessage {
   type: 'status' | 'partial_result' | 'final_result' | 'error' | 'end_of_stream';
   message?: string;
+  step_name?: string;
   data?: any;
 }
 
 interface AnalysisCallbacks {
   onAnalysisUpdate: (report: AnalysisReport) => void;
-  onStatusUpdate: (message: string) => void;
+  onStatusUpdate: (message: AnalysisMessage) => void;
   onError: (error: string) => void;
   onIsLoading: (loading: boolean) => void;
   onSessionId: (sessionId: string) => void;
@@ -22,35 +24,35 @@ interface AnalysisCallbacks {
 const handleMockData = (callbacks: AnalysisCallbacks) => {
   const { onStatusUpdate, onAnalysisUpdate, onIsLoading } = callbacks;
 
-  onStatusUpdate('Using mock data. Simulating analysis...');
-
-  setTimeout(() => {
-    onStatusUpdate('Simulating perspective identification...');
+  let currentStep = 0;
+  const interval = setInterval(() => {
+    if (currentStep < ANALYSIS_STEPS.length) {
+      onStatusUpdate({
+        type: 'status',
+        message: `Completed step: ${ANALYSIS_STEPS[currentStep]} `,
+        step_name: ANALYSIS_STEPS[currentStep],
+      });
+      currentStep++;
+    } else {
+      clearInterval(interval);
+      const report: AnalysisReport = {
+          topic: mockData.topic,
+          overallSummary: mockData.summary,
+          perspectives: mockData.perspectives.map((p: any) => ({
+            id: p.perspective_name, // Or generate a unique ID
+            title: p.perspective_name,
+            summary: p.narrative,
+            evidence: p.supporting_evidence?.map((e: string, i: number) => ({ id: `${p.perspective_name}-evidence-${i}`, statement: e })) || [],
+            strengths: p.strengths || [],
+            weaknesses: p.weaknesses || [],
+            rated_perspective_strength: p.rated_perspective_strength || 0,
+          })),
+          timestamp: new Date().toISOString(),
+        };
+      onAnalysisUpdate(report);
+      onIsLoading(false);
+    }
   }, 1000);
-
-  setTimeout(() => {
-    onStatusUpdate('Simulating data synthesis...');
-  }, 2000);
-
-  setTimeout(() => {
-    const report: AnalysisReport = {
-        topic: mockData.topic,
-        overallSummary: mockData.summary,
-        perspectives: mockData.perspectives.map((p: any) => ({
-          id: p.perspective_name, // Or generate a unique ID
-          title: p.perspective_name,
-          summary: p.narrative,
-          evidence: p.supporting_evidence?.map((e: string, i: number) => ({ id: `${p.perspective_name}-evidence-${i}`, statement: e })) || [],
-          credibility: p.credibility || 'Unknown',
-          factCheckStatus: p.fact_check_status || 'Unverified',
-          strengths: p.strengths || [],
-          weaknesses: p.weaknesses || [],
-        })),
-        timestamp: new Date().toISOString(),
-      };
-    onAnalysisUpdate(report);
-    onIsLoading(false);
-  }, 3000);
 };
 
 export const startAnalysis = async (topic: string, callbacks: AnalysisCallbacks) => {
@@ -96,14 +98,14 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
     const ws = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
 
     ws.onopen = () => {
-        onStatusUpdate('WebSocket connected. Waiting for analysis updates...');
+        // Optional: send a message to confirm connection, but not a step update
     };
 
     ws.onmessage = (event) => {
         const msg: AnalysisMessage = JSON.parse(event.data);
 
         if (msg.type === 'status') {
-            onStatusUpdate(msg.message || '');
+            onStatusUpdate(msg);
         } else if (msg.type === 'final_result') {
             const report: AnalysisReport = {
                 topic: msg.data.topic,
@@ -113,10 +115,9 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
                     title: p.perspective_name,
                     summary: p.narrative,
                     evidence: p.supporting_evidence?.map((e: string, i: number) => ({ id: `${p.perspective_name}-evidence-${i}`, statement: e })) || [],
-                    credibility: p.credibility || 'Unknown',
-                    factCheckStatus: p.fact_check_status || 'Unverified',
                     strengths: p.strengths || [],
                     weaknesses: p.weaknesses || [],
+                    rated_perspective_strength: p.rated_perspective_strength || 0,
                 })),
                 timestamp: new Date().toISOString(),
             };

@@ -24,7 +24,8 @@
         "May underestimate the challenges of scaling up new technologies.",
         "Can overlook the social and political barriers to change.",
         "Relies on the assumption of continued exponential progress."
-      ]
+      ],
+      "rated_perspective_strength": 4
     },
     {
       "perspective_name": "Policy-Driven Transition",
@@ -48,7 +49,8 @@
         "Can be subject to political instability and policy reversals.",
         "May lead to economic distortions and unintended consequences.",
         "Requires strong international cooperation, which can be difficult to achieve."
-      ]
+      ],
+      "rated_perspective_strength": 3
     },
     {
       "perspective_name": "Community-Led & Decentralized",
@@ -72,7 +74,8 @@
         "May be difficult to scale up to meet the energy demands of large cities.",
         "Can face challenges related to financing and technical expertise.",
         "Requires a supportive regulatory framework to thrive."
-      ]
+      ],
+      "rated_perspective_strength": 5
     }
   ]
 }

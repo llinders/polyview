@@ -2,24 +2,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TopicInput } from './components/TopicInput';
 import { AnalysisDisplay } from './components/AnalysisDisplay';
-import { Spinner } from './components/Spinner';
+import { ProgressTracker } from './components/ProgressTracker';
 import Settings from './components/Settings';
 import type { AnalysisReport } from './types';
-import { APP_TITLE, APP_SUBTITLE } from './constants';
-import { startAnalysis, connectToWebSocket } from './services/polyViewAgentService';
+import { APP_TITLE, APP_SUBTITLE, ANALYSIS_STEPS } from './constants';
+import { startAnalysis, connectToWebSocket, type AnalysisMessage } from './services/polyViewAgentService';
 
 const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<AnalysisReport | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [iteration, setIteration] = useState<number | undefined>();
+  const [articlesFound, setArticlesFound] = useState<number | undefined>();
+
   const ws = useRef<WebSocket | null>(null);
+
+  const resetState = () => {
+    setAnalysis(null);
+    setIsLoading(false);
+    setError(null);
+    setSessionId(null);
+    setCurrentStep(0);
+    setIteration(undefined);
+    setArticlesFound(undefined);
+  };
+
+  const handleStatusUpdate = (msg: AnalysisMessage) => {
+    if (msg.step_name) {
+      const completedStepIndex = ANALYSIS_STEPS.findIndex(step => step === msg.step_name);
+      if (completedStepIndex > -1 && completedStepIndex < ANALYSIS_STEPS.length - 1) {
+        setCurrentStep(completedStepIndex + 1);
+      }
+    }
+
+    if (msg.message) {
+        const iterationMatch = msg.message.match(/Iteration: (\d+)/);
+        if (iterationMatch) {
+          setIteration(parseInt(iterationMatch[1], 10));
+        }
+
+        const articlesMatch = msg.message.match(/Articles found: (\d+)/);
+        if (articlesMatch) {
+          setArticlesFound(parseInt(articlesMatch[1], 10));
+        }
+    }
+  };
 
   useEffect(() => {
     if (sessionId) {
       const callbacks = {
-        onStatusUpdate: (message: string) => setMessages(prev => [...prev, message]),
+        onStatusUpdate: handleStatusUpdate,
         onAnalysisUpdate: (report: AnalysisReport) => {
             setAnalysis(report);
             setIsLoading(false);
@@ -45,13 +79,15 @@ const App: React.FC = () => {
       setAnalysis(null);
       return;
     }
-    setMessages([]);
-    setError(null);
-    setAnalysis(null);
+    resetState();
+    setIsLoading(true);
 
     const callbacks = {
-        onAnalysisUpdate: setAnalysis,
-        onStatusUpdate: (message: string) => setMessages(prev => [...prev, message]),
+        onAnalysisUpdate: (report: AnalysisReport) => {
+          setAnalysis(report);
+          setIsLoading(false);
+        },
+        onStatusUpdate: handleStatusUpdate,
         onError: (error: string) => {
             setError(error);
             setIsLoading(false);
@@ -77,15 +113,11 @@ const App: React.FC = () => {
         <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />
 
         {isLoading && (
-          <div className="flex flex-col items-center justify-center mt-10 text-slate-400">
-            <Spinner />
-            <p className="mt-4 text-lg">Analyzing perspectives... this may take a moment.</p>
-            <div className="mt-4 text-sm text-slate-500 w-full text-left">
-                {messages.map((msg, index) => (
-                    <p key={index}>{msg}</p>
-                ))}
-            </div>
-          </div>
+          <ProgressTracker 
+            currentStep={currentStep} 
+            iteration={iteration} 
+            articlesFound={articlesFound} 
+          />
         )}
 
         {error && !isLoading && (

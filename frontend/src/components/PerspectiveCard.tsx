@@ -1,42 +1,8 @@
 import React, { useState } from 'react';
 import type { Perspective } from '../types';
-import { CredibilityLevel, FactCheckStatus } from '../types';
-import { CheckCircleIcon } from './icons/CheckCircleIcon';
-import { XCircleIcon } from './icons/XCircleIcon';
-import { QuestionMarkCircleIcon } from './icons/QuestionMarkCircleIcon';
-import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
-import { ShieldExclamationIcon } from './icons/ShieldExclamationIcon';
-import { InformationCircleIcon } from './icons/InformationCircleIcon';
+import StarIcon from './icons/StarIcon';
 
 type ExpandedSection = 'evidence' | 'strengths' | 'weaknesses' | null;
-
-const FactCheckStatusIcon: React.FC<{ status: FactCheckStatus }> = ({ status }) => {
-  switch (status) {
-    case FactCheckStatus.VERIFIED:
-      return <CheckCircleIcon className="w-5 h-5 text-green-400" />;
-    case FactCheckStatus.DISPUTED:
-      return <XCircleIcon className="w-5 h-5 text-red-400" />;
-    case FactCheckStatus.UNVERIFIED:
-      return <QuestionMarkCircleIcon className="w-5 h-5 text-yellow-400" />;
-    case FactCheckStatus.IN_PROGRESS:
-      return <InformationCircleIcon className="w-5 h-5 text-blue-400" />;
-    default:
-      return <InformationCircleIcon className="w-5 h-5 text-slate-500" />;
-  }
-};
-
-const CredibilityIcon: React.FC<{ level: CredibilityLevel }> = ({ level }) => {
-  switch (level) {
-    case CredibilityLevel.HIGH:
-      return <ShieldCheckIcon className="w-5 h-5 text-green-400" />;
-    case CredibilityLevel.MEDIUM:
-      return <ShieldExclamationIcon className="w-5 h-5 text-yellow-400" />;
-    case CredibilityLevel.LOW:
-      return <ShieldExclamationIcon className="w-5 h-5 text-red-400" />;
-    default:
-      return <InformationCircleIcon className="w-5 h-5 text-slate-500" />;
-  }
-};
 
 export const PerspectiveCard: React.FC<{ perspective: Perspective }> = ({ perspective }) => {
   const [expandedSection, setExpandedSection] = useState<ExpandedSection>(null);
@@ -73,12 +39,8 @@ export const PerspectiveCard: React.FC<{ perspective: Perspective }> = ({ perspe
       
       <div className="flex flex-wrap gap-x-6 gap-y-2 mb-4 text-sm">
         <div className="flex items-center space-x-2 text-slate-300">
-          <CredibilityIcon level={perspective.credibility} />
-          <span>Credibility: <span className={`font-semibold`}>{perspective.credibility}</span></span>
-        </div>
-        <div className="flex items-center space-x-2 text-slate-300">
-          <FactCheckStatusIcon status={perspective.factCheckStatus} />
-          <span>Fact-Check: <span className={`font-semibold`}>{perspective.factCheckStatus}</span></span>
+          <StarIcon className="w-5 h-5 text-yellow-400" />
+          <span>Rated Perspective Strength: <span className={`font-semibold`}>{perspective.rated_perspective_strength}/5</span></span>
         </div>
       </div>
 

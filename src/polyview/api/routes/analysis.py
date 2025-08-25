@@ -46,11 +46,11 @@ async def run_analysis_workflow(session_id: str, topic: str):
                 f"Research workflow state: Node '{current_node}' with keys: {list(node_data.keys())}."
             )
 
-            # Send a status update for each node completion
             await queue.put(
                 {
                     "type": "status",
                     "message": f"Completed step: {current_node.replace('_', ' ').title()}",
+                    "step_name": current_node,
                 }
             )
 

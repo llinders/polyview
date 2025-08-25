@@ -1,0 +1,87 @@
+
+.progress-tracker-container {
+    padding: 1.5rem;
+    background-color: rgba(15, 23, 42, 0.5);
+    border-radius: 0.5rem;
+    margin-top: 2rem;
+}
+
+.progress-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 12px; /* Align with the center of the icons */
+    left: 12px;
+    width: 2px;
+    height: calc(100% - 24px);
+    background-color: #374151; /* dark-gray */
+    z-index: 0;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.step:last-child {
+    margin-bottom: 0;
+}
+
+.step-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #1e293b; /* slate-800 */
+    border-radius: 50%;
+}
+
+.step.completed .step-icon {
+    color: #22c55e; /* green-500 */
+}
+
+.step.current .step-icon {
+    color: #38bdf8; /* sky-400 */
+}
+
+.step:not(.completed):not(.current) .step-icon {
+    color: #475569; /* slate-600 */
+}
+
+.step-label {
+    font-size: 1.125rem; /* text-lg */
+    font-weight: 500;
+    color: #94a3b8; /* slate-400 */
+    transition: color 0.3s ease;
+}
+
+.step.current .step-label {
+    color: #e2e8f0; /* slate-200 */
+    font-weight: 600;
+}
+
+.step.completed .step-name-text {
+    color: #64748b; /* slate-500 */
+    text-decoration: line-through;
+}
+
+.step-stats {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 400;
+    color: #64748b; /* slate-500 */
+    margin-left: 0.75rem;
+    background-color: #334155; /* slate-700 */
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.5rem;
+}
