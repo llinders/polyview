@@ -11,7 +11,8 @@ import { startAnalysis, connectToWebSocket, type AnalysisMessage } from './servi
 const App: React.FC = () => {
   const [topic, setTopic] = useState<string>('');
   const [overallSummary, setOverallSummary] = useState<string | undefined>(undefined);
-  const [perspectives, setPerspectives] = useState<Perspective[]>([]);
+  const [perspectives, setPerspectives] = useState<(Perspective | null)[]>([]); // Can be null for placeholders
+  const [expectedPerspectiveCount, setExpectedPerspectiveCount] = useState<number | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -25,6 +26,7 @@ const App: React.FC = () => {
     setTopic('');
     setOverallSummary(undefined);
     setPerspectives([]);
+    setExpectedPerspectiveCount(undefined);
     setIsLoading(false);
     setError(null);
     setSessionId(null);
@@ -60,11 +62,33 @@ const App: React.FC = () => {
 
   const handlePartialPerspective = (newPerspective: Perspective) => {
     setPerspectives(prev => {
-      // Check if perspective already exists (e.g., by ID or title)
-      if (!prev.some(p => p.id === newPerspective.id || p.title === newPerspective.title)) {
+      const existingIndex = prev.findIndex(p => p?.id === newPerspective.id || p?.title === newPerspective.title);
+      if (existingIndex > -1) {
+        // Update existing perspective
+        const updated = [...prev];
+        updated[existingIndex] = newPerspective;
+        return updated;
+      } else if (prev.includes(null)) {
+        // Replace first null placeholder
+        const firstNullIndex = prev.indexOf(null);
+        const updated = [...prev];
+        updated[firstNullIndex] = newPerspective;
+        return updated;
+      } else {
+        // Add new perspective if no placeholders or no matching ID
         return [...prev, newPerspective];
       }
-      return prev;
+    });
+  };
+
+  const handleClusterCount = (count: number) => {
+    setExpectedPerspectiveCount(count);
+    // Initialize perspectives with null placeholders if not already populated
+    setPerspectives(prev => {
+      if (prev.length === 0) {
+        return Array(count).fill(null);
+      }
+      return prev; // Keep existing if already populated
     });
   };
 
@@ -76,9 +100,11 @@ const App: React.FC = () => {
             setOverallSummary(report.overallSummary);
             setPerspectives(report.perspectives);
             setIsLoading(false);
+            setExpectedPerspectiveCount(report.perspectives.length); // Final count
         },
         onPartialSummary: handlePartialSummary,
         onPartialPerspective: handlePartialPerspective,
+        onClusterCount: handleClusterCount,
         onError: (error: string) => {
             setError(error);
             setIsLoading(false);
@@ -108,10 +134,12 @@ const App: React.FC = () => {
           setOverallSummary(report.overallSummary);
           setPerspectives(report.perspectives);
           setIsLoading(false);
+          setExpectedPerspectiveCount(report.perspectives.length); // Final count
         },
         onStatusUpdate: handleStatusUpdate,
         onPartialSummary: handlePartialSummary,
         onPartialPerspective: handlePartialPerspective,
+        onClusterCount: handleClusterCount,
         onError: (error: string) => {
             setError(error);
             setIsLoading(false);
@@ -144,7 +172,7 @@ const App: React.FC = () => {
           </aside>
         )}
         <main className={`flex-grow p-6 sm:p-8 md:p-10 ${isLoading ? 'w-3/4' : 'w-full'}`}>
-          <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />
+          {!isLoading && <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />}
 
           {error && (
             <div 
@@ -156,13 +184,18 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {(overallSummary || perspectives.length > 0) && (
+          {(isLoading || overallSummary || perspectives.length > 0 || expectedPerspectiveCount !== undefined) && (
             <div className="mt-8">
-              <AnalysisDisplay topic={topic} overallSummary={overallSummary} perspectives={perspectives} />
+              <AnalysisDisplay 
+                topic={topic} 
+                overallSummary={overallSummary} 
+                perspectives={perspectives} 
+                expectedPerspectiveCount={expectedPerspectiveCount}
+              />
             </div>
           )}
 
-          {!isLoading && !error && !overallSummary && perspectives.length === 0 && (
+          {!isLoading && !error && !overallSummary && perspectives.length === 0 && expectedPerspectiveCount === undefined && (
               <div className="mt-10 text-center text-slate-500">
                   <p className="text-xl">Enter a topic above to begin your multi-perspective analysis.</p>
                   <p className="mt-2 text-sm">Example: "The future of artificial intelligence in healthcare"</p>
