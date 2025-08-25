@@ -4,12 +4,14 @@ import { TopicInput } from './components/TopicInput';
 import { AnalysisDisplay } from './components/AnalysisDisplay';
 import { ProgressTracker } from './components/ProgressTracker';
 import Settings from './components/Settings';
-import type { AnalysisReport } from './types';
+import type { AnalysisReport, Perspective } from './types';
 import { APP_TITLE, APP_SUBTITLE, ANALYSIS_STEPS } from './constants';
 import { startAnalysis, connectToWebSocket, type AnalysisMessage } from './services/polyViewAgentService';
 
 const App: React.FC = () => {
-  const [analysis, setAnalysis] = useState<AnalysisReport | null>(null);
+  const [topic, setTopic] = useState<string>('');
+  const [overallSummary, setOverallSummary] = useState<string | undefined>(undefined);
+  const [perspectives, setPerspectives] = useState<Perspective[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -20,7 +22,9 @@ const App: React.FC = () => {
   const ws = useRef<WebSocket | null>(null);
 
   const resetState = () => {
-    setAnalysis(null);
+    setTopic('');
+    setOverallSummary(undefined);
+    setPerspectives([]);
     setIsLoading(false);
     setError(null);
     setSessionId(null);
@@ -50,14 +54,31 @@ const App: React.FC = () => {
     }
   };
 
+  const handlePartialSummary = (summary: string) => {
+    setOverallSummary(summary);
+  };
+
+  const handlePartialPerspective = (newPerspective: Perspective) => {
+    setPerspectives(prev => {
+      // Check if perspective already exists (e.g., by ID or title)
+      if (!prev.some(p => p.id === newPerspective.id || p.title === newPerspective.title)) {
+        return [...prev, newPerspective];
+      }
+      return prev;
+    });
+  };
+
   useEffect(() => {
     if (sessionId) {
       const callbacks = {
         onStatusUpdate: handleStatusUpdate,
         onAnalysisUpdate: (report: AnalysisReport) => {
-            setAnalysis(report);
+            setOverallSummary(report.overallSummary);
+            setPerspectives(report.perspectives);
             setIsLoading(false);
         },
+        onPartialSummary: handlePartialSummary,
+        onPartialPerspective: handlePartialPerspective,
         onError: (error: string) => {
             setError(error);
             setIsLoading(false);
@@ -73,21 +94,24 @@ const App: React.FC = () => {
     };
   }, [sessionId]);
 
-  const handleAnalyzeTopic = async (topic: string) => {
-    if (!topic.trim()) {
+  const handleAnalyzeTopic = async (inputTopic: string) => {
+    if (!inputTopic.trim()) {
       setError("Please enter a topic to analyze.");
-      setAnalysis(null);
       return;
     }
     resetState();
+    setTopic(inputTopic); // Set the topic in state
     setIsLoading(true);
 
     const callbacks = {
         onAnalysisUpdate: (report: AnalysisReport) => {
-          setAnalysis(report);
+          setOverallSummary(report.overallSummary);
+          setPerspectives(report.perspectives);
           setIsLoading(false);
         },
         onStatusUpdate: handleStatusUpdate,
+        onPartialSummary: handlePartialSummary,
+        onPartialPerspective: handlePartialPerspective,
         onError: (error: string) => {
             setError(error);
             setIsLoading(false);
@@ -96,7 +120,7 @@ const App: React.FC = () => {
         onSessionId: setSessionId,
     };
 
-    await startAnalysis(topic, callbacks);
+    await startAnalysis(inputTopic, callbacks);
   };
 
   return (
@@ -109,40 +133,43 @@ const App: React.FC = () => {
         <p className="text-slate-400 mt-2 text-lg sm:text-xl">{APP_SUBTITLE}</p>
       </header>
 
-      <main className="w-full max-w-4xl bg-slate-800 shadow-2xl rounded-xl p-6 sm:p-8 md:p-10 flex-grow">
-        <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />
-
+      <div className="flex flex-grow w-full max-w-6xl mx-auto">
         {isLoading && (
-          <ProgressTracker 
-            currentStep={currentStep} 
-            iteration={iteration} 
-            articlesFound={articlesFound} 
-          />
+          <aside className="w-1/4 p-4">
+            <ProgressTracker 
+              currentStep={currentStep} 
+              iteration={iteration} 
+              articlesFound={articlesFound} 
+            />
+          </aside>
         )}
+        <main className={`flex-grow p-6 sm:p-8 md:p-10 ${isLoading ? 'w-3/4' : 'w-full'}`}>
+          <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />
 
-        {error && !isLoading && (
-          <div 
-            className="mt-6 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-md"
-            role="alert"
-          >
-            <p className="font-semibold">Analysis Failed</p>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {analysis && !isLoading && !error && (
-          <div className="mt-8">
-            <AnalysisDisplay report={analysis} />
-          </div>
-        )}
-
-        {!analysis && !isLoading && !error && (
-            <div className="mt-10 text-center text-slate-500">
-                <p className="text-xl">Enter a topic above to begin your multi-perspective analysis.</p>
-                <p className="mt-2 text-sm">Example: "The future of artificial intelligence in healthcare"</p>
+          {error && (
+            <div 
+              className="mt-6 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-md"
+              role="alert"
+            >
+              <p className="font-semibold">Analysis Failed</p>
+              <p>{error}</p>
             </div>
-        )}
-      </main>
+          )}
+
+          {(overallSummary || perspectives.length > 0) && (
+            <div className="mt-8">
+              <AnalysisDisplay topic={topic} overallSummary={overallSummary} perspectives={perspectives} />
+            </div>
+          )}
+
+          {!isLoading && !error && !overallSummary && perspectives.length === 0 && (
+              <div className="mt-10 text-center text-slate-500">
+                  <p className="text-xl">Enter a topic above to begin your multi-perspective analysis.</p>
+                  <p className="mt-2 text-sm">Example: "The future of artificial intelligence in healthcare"</p>
+              </div>
+          )}
+        </main>
+      </div>
 
       <footer className="w-full max-w-4xl text-center py-8 text-slate-500 text-sm">
         <p>&copy; {new Date().getFullYear()} PolyView.</p>
