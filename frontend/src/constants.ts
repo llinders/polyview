@@ -1,5 +1,18 @@
-export const GEMINI_MODEL_NAME = "gemini-1.5-flash-preview-05-14";
-export const APP_TITLE = "PolyView";
-export const APP_SUBTITLE = "Understanding through many angles";
 
-export const MOCK_API_KEY_WARNING = "process.env.API_KEY is not set. Using mock data. Please set your API key for live results.";
+export const APP_TITLE = 'PolyView';
+export const APP_SUBTITLE = 'Gaining clarity through diverse perspectives.';
+
+export const ANALYSIS_STEPS = [
+  'topic_refinement',
+  'query_generation',
+  'search_agent',
+  'perspective_identification',
+  'perspective_clustering',
+  'perspective_synthesis',
+];
+
+export const formatStepName = (stepName: string) => {
+  return stepName
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+};
