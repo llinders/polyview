@@ -1,4 +1,3 @@
-
 import type { AnalysisReport, Perspective } from './types';
 import mockData from '../mock-data.json';
 import { ANALYSIS_STEPS } from '../constants';
@@ -11,9 +10,10 @@ export interface AnalysisMessage {
   message?: string;
   step_name?: string;
   data?: {
-    type?: 'summary' | 'perspective'; // New field to indicate data type
+    type?: 'summary' | 'perspective' | 'cluster_count'; // New field to indicate data type
     content?: string; // For summary
     perspective?: Perspective; // For individual perspective
+    count?: number; // For cluster count
     topic?: string; // For final result
     overallSummary?: string; // For final result
     perspectives?: Perspective[]; // For final result
@@ -25,16 +25,18 @@ interface AnalysisCallbacks {
   onStatusUpdate: (message: AnalysisMessage) => void;
   onPartialSummary: (summary: string) => void;
   onPartialPerspective: (perspective: Perspective) => void;
+  onClusterCount: (count: number) => void; // New callback
   onError: (error: string) => void;
   onIsLoading: (loading: boolean) => void;
   onSessionId: (sessionId: string) => void;
 }
 
 const handleMockData = (callbacks: AnalysisCallbacks) => {
-  const { onStatusUpdate, onAnalysisUpdate, onIsLoading, onPartialSummary, onPartialPerspective } = callbacks;
+  const { onStatusUpdate, onAnalysisUpdate, onIsLoading, onPartialSummary, onPartialPerspective, onClusterCount } = callbacks;
 
   let currentStepIndex = 0;
   let perspectiveIndex = 0;
+  let summarySent = false;
 
   const mockInterval = setInterval(() => {
     if (currentStepIndex < ANALYSIS_STEPS.length) {
@@ -44,11 +46,23 @@ const handleMockData = (callbacks: AnalysisCallbacks) => {
         message: `Completed step: ${ANALYSIS_STEPS[currentStepIndex]} `,
         step_name: ANALYSIS_STEPS[currentStepIndex],
       });
+
+      // After clustering, send cluster count
+      if (ANALYSIS_STEPS[currentStepIndex] === 'perspective_clustering') {
+        onStatusUpdate({
+          type: 'partial_result',
+          data: {
+            type: 'cluster_count',
+            count: mockData.perspectives.length,
+          },
+        });
+      }
+
       currentStepIndex++;
-    } else if (mockData.overallSummary && !onPartialSummary) { // Send summary if not already sent
+    } else if (!summarySent) {
+      // Send summary
       onPartialSummary(mockData.overallSummary);
-      // Mark summary as sent (by setting onPartialSummary to null or similar, or use a flag)
-      // For simplicity in mock, we'll just proceed to perspectives
+      summarySent = true;
     } else if (perspectiveIndex < mockData.perspectives.length) {
       // Send individual perspectives
       const mockPerspective = mockData.perspectives[perspectiveIndex];
@@ -124,7 +138,7 @@ export const startAnalysis = async (topic: string, callbacks: AnalysisCallbacks)
 };
 
 export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbacks) => {
-    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective } = callbacks;
+    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective, onClusterCount } = callbacks;
     const ws = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
 
     ws.onopen = () => {
@@ -141,6 +155,8 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
                 onPartialSummary(msg.data.content);
             } else if (msg.data?.type === 'perspective' && msg.data.perspective) {
                 onPartialPerspective(msg.data.perspective);
+            } else if (msg.data?.type === 'cluster_count' && typeof msg.data.count === 'number') {
+                onClusterCount(msg.data.count);
             }
         } else if (msg.type === 'final_result') {
             const report: AnalysisReport = {

@@ -4,7 +4,7 @@ import StarIcon from './icons/StarIcon';
 
 type ExpandedSection = 'evidence' | 'strengths' | 'weaknesses' | null;
 
-export const PerspectiveCard: React.FC<{ perspective: Perspective }> = ({ perspective }) => {
+export const PerspectiveCard: React.FC<{ perspective: Perspective | null }> = ({ perspective }) => {
   const [expandedSection, setExpandedSection] = useState<ExpandedSection>(null);
 
   const toggleSection = (section: ExpandedSection) => {
@@ -32,6 +32,18 @@ export const PerspectiveCard: React.FC<{ perspective: Perspective }> = ({ perspe
       </div>
     );
   };
+
+  if (!perspective) {
+    return (
+      <div className="bg-slate-700/70 p-6 rounded-lg shadow-lg border border-slate-600 animate-pulse">
+        <div className="h-6 bg-slate-600 rounded w-3/4 mb-4"></div> {/* Title skeleton */}
+        <div className="h-4 bg-slate-600 rounded w-1/2 mb-4"></div> {/* Rating skeleton */}
+        <div className="h-4 bg-slate-600 rounded w-full mb-2"></div> {/* Summary line 1 */}
+        <div className="h-4 bg-slate-600 rounded w-5/6 mb-2"></div> {/* Summary line 2 */}
+        <div className="h-4 bg-slate-600 rounded w-3/4"></div> {/* Summary line 3 */}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-700/70 p-6 rounded-lg shadow-lg border border-slate-600 hover:border-sky-500/50 transition-all duration-300 ease-in-out transform hover:scale-[1.01]">
