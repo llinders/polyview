@@ -64,18 +64,10 @@ const App: React.FC = () => {
     setPerspectives(prev => {
       const existingIndex = prev.findIndex(p => p?.id === newPerspective.id || p?.title === newPerspective.title);
       if (existingIndex > -1) {
-        // Update existing perspective
         const updated = [...prev];
         updated[existingIndex] = newPerspective;
         return updated;
-      } else if (prev.includes(null)) {
-        // Replace first null placeholder
-        const firstNullIndex = prev.indexOf(null);
-        const updated = [...prev];
-        updated[firstNullIndex] = newPerspective;
-        return updated;
       } else {
-        // Add new perspective if no placeholders or no matching ID
         return [...prev, newPerspective];
       }
     });
@@ -83,12 +75,11 @@ const App: React.FC = () => {
 
   const handleClusterCount = (count: number) => {
     setExpectedPerspectiveCount(count);
-    // Initialize perspectives with null placeholders if not already populated
     setPerspectives(prev => {
       if (prev.length === 0) {
         return Array(count).fill(null);
       }
-      return prev; // Keep existing if already populated
+      return prev;
     });
   };
 
@@ -100,7 +91,7 @@ const App: React.FC = () => {
             setOverallSummary(report.overallSummary);
             setPerspectives(report.perspectives);
             setIsLoading(false);
-            setExpectedPerspectiveCount(report.perspectives.length); // Final count
+            setExpectedPerspectiveCount(report.perspectives.length);
         },
         onPartialSummary: handlePartialSummary,
         onPartialPerspective: handlePartialPerspective,
@@ -126,7 +117,7 @@ const App: React.FC = () => {
       return;
     }
     resetState();
-    setTopic(inputTopic); // Set the topic in state
+    setTopic(inputTopic);
     setIsLoading(true);
 
     const callbacks = {
@@ -134,7 +125,7 @@ const App: React.FC = () => {
           setOverallSummary(report.overallSummary);
           setPerspectives(report.perspectives);
           setIsLoading(false);
-          setExpectedPerspectiveCount(report.perspectives.length); // Final count
+          setExpectedPerspectiveCount(report.perspectives.length);
         },
         onStatusUpdate: handleStatusUpdate,
         onPartialSummary: handlePartialSummary,
@@ -161,17 +152,17 @@ const App: React.FC = () => {
         <p className="text-slate-400 mt-2 text-lg sm:text-xl">{APP_SUBTITLE}</p>
       </header>
 
-      <div className="flex flex-grow w-full max-w-6xl mx-auto">
-        {isLoading && (
-          <aside className="w-1/4 p-4">
+      <div className="flex flex-col md:flex-row flex-grow w-full max-w-6xl mx-auto">
+        <aside className={`p-4 transition-all duration-500 ease-in-out ${isLoading ? 'w-full md:w-1/4 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+          {isLoading && (
             <ProgressTracker 
               currentStep={currentStep} 
               iteration={iteration} 
               articlesFound={articlesFound} 
             />
-          </aside>
-        )}
-        <main className={`flex-grow p-6 sm:p-8 md:p-10 ${isLoading ? 'w-3/4' : 'w-full'}`}>
+          )}
+        </aside>
+        <main className={`flex-grow p-6 sm:p-8 md:p-10 transition-all duration-500 ease-in-out ${isLoading ? 'w-full md:w-3/4' : 'w-full'}`}>
           {!isLoading && <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />}
 
           {error && (
