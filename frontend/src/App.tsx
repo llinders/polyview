@@ -1,74 +1,37 @@
-import { useState, useRef, useEffect } from 'react';
-import './App.css';
-import PerspectiveCard from './components/PerspectiveCard';
-import SummaryView from './components/SummaryView';
-import FollowUpInput from './components/FollowUpInput';
 
-interface AnalysisMessage {
-  type: 'status' | 'partial_result' | 'final_result' | 'error' | 'end_of_stream';
-  message?: string;
-  data?: any;
-}
+import React, { useState, useEffect, useRef } from 'react';
+import { TopicInput } from './components/TopicInput';
+import { AnalysisDisplay } from './components/AnalysisDisplay';
+import { Spinner } from './components/Spinner';
+import Settings from './components/Settings';
+import type { AnalysisReport } from './types';
+import { APP_TITLE, APP_SUBTITLE } from './constants';
+import { startAnalysis, connectToWebSocket } from './services/polyViewAgentService';
 
-function App() {
-  const [topic, setTopic] = useState<string>('');
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
-  const [finalResult, setFinalResult] = useState<any>(null);
+const App: React.FC = () => {
+  const [analysis, setAnalysis] = useState<AnalysisReport | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<string[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const API_BASE_URL = 'http://localhost:8000/api/v1';
-  const WS_BASE_URL = 'ws://localhost:8000/api/v1/ws';
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   useEffect(() => {
     if (sessionId) {
-      ws.current = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
-
-      ws.current.onopen = () => {
-        setMessages((prev) => [...prev, 'WebSocket connected. Waiting for analysis updates...']);
+      const callbacks = {
+        onStatusUpdate: (message: string) => setMessages(prev => [...prev, message]),
+        onAnalysisUpdate: (report: AnalysisReport) => {
+            setAnalysis(report);
+            setIsLoading(false);
+        },
+        onError: (error: string) => {
+            setError(error);
+            setIsLoading(false);
+        },
+        onIsLoading: setIsLoading,
+        onSessionId: setSessionId,
       };
-
-      ws.current.onmessage = (event) => {
-        const msg: AnalysisMessage = JSON.parse(event.data);
-        console.log('Received message:', msg);
-
-        if (msg.type === 'status') {
-          setMessages((prev) => [...prev, `Status: ${msg.message}`]);
-        } else if (msg.type === 'partial_result') {
-          setMessages((prev) => [...prev, `Partial Result: ${JSON.stringify(msg.data)}`]);
-        } else if (msg.type === 'final_result') {
-          setMessages((prev) => [...prev, 'Analysis complete!']);
-          console.log('Final Result:', msg.data);
-          setFinalResult(msg.data);
-          setIsLoading(false);
-        } else if (msg.type === 'error') {
-          setMessages((prev) => [...prev, `Error: ${msg.message}`]);
-          setIsLoading(false);
-        } else if (msg.type === 'end_of_stream') {
-          setMessages((prev) => [...prev, 'End of analysis stream.']);
-          ws.current?.close();
-        }
-      };
-
-      ws.current.onclose = () => {
-        setMessages((prev) => [...prev, 'WebSocket disconnected.']);
-        setIsLoading(false);
-      };
-
-      ws.current.onerror = (error) => {
-        setMessages((prev) => [...prev, `WebSocket error: ${error}`]);
-        setIsLoading(false);
-      };
+      ws.current = connectToWebSocket(sessionId, callbacks);
     }
 
     return () => {
@@ -76,104 +39,84 @@ function App() {
     };
   }, [sessionId]);
 
-  const startAnalysis = async () => {
+  const handleAnalyzeTopic = async (topic: string) => {
     if (!topic.trim()) {
-      alert('Please enter a topic.');
+      setError("Please enter a topic to analyze.");
+      setAnalysis(null);
       return;
     }
-
     setMessages([]);
-    setFinalResult(null);
-    setSessionId(null);
-    setIsLoading(true);
+    setError(null);
+    setAnalysis(null);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    const callbacks = {
+        onAnalysisUpdate: setAnalysis,
+        onStatusUpdate: (message: string) => setMessages(prev => [...prev, message]),
+        onError: (error: string) => {
+            setError(error);
+            setIsLoading(false);
         },
-        body: JSON.stringify({ topic }),
-      });
+        onIsLoading: setIsLoading,
+        onSessionId: setSessionId,
+    };
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setSessionId(data.session_id);
-      setMessages((prev) => [...prev, `Analysis started with Session ID: ${data.session_id}`]);
-    } catch (error) {
-      setMessages((prev) => [...prev, `Failed to start analysis: ${error}`]);
-      setIsLoading(false);
-    }
-  };
-
-  const loadMockData = async () => {
-    setIsLoading(true);
-    setMessages(['Loading mock data...']);
-    try {
-      const response = await fetch('/src/mock-data.json');
-      const data = await response.json();
-      setFinalResult(data);
-      setMessages(['Mock data loaded successfully!']);
-    } catch (error) {
-      setMessages([`Failed to load mock data: ${error}`]);
-    }
-    setIsLoading(false);
+    await startAnalysis(topic, callbacks);
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>PolyView Analysis</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 selection:bg-sky-500 selection:text-white">
+      <Settings />
+      <header className="w-full max-w-4xl text-center my-8 md:my-12">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-teal-400">
+          {APP_TITLE}
+        </h1>
+        <p className="text-slate-400 mt-2 text-lg sm:text-xl">{APP_SUBTITLE}</p>
       </header>
-      <main className="App-main">
-        <div className="input-section">
-          <input
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="Enter topic for analysis (e.g., 'Climate Change')"
-            disabled={isLoading}
-          />
-          <button onClick={startAnalysis} disabled={isLoading}>
-            {isLoading ? 'Analyzing...' : 'Start Analysis'}
-          </button>
-          <button onClick={loadMockData} disabled={isLoading} className="mock-data-btn">
-            Load Mock Data
-          </button>
-        </div>
 
-        <div className="messages-section">
-          <h2>Live Updates</h2>
-          <div className="messages-box">
-            {messages.length === 0 && <p>No updates yet. Start an analysis!</p>}
-            {messages.map((msg, index) => (
-              <p key={index}>{msg}</p>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
+      <main className="w-full max-w-4xl bg-slate-800 shadow-2xl rounded-xl p-6 sm:p-8 md:p-10 flex-grow">
+        <TopicInput onSubmit={handleAnalyzeTopic} isLoading={isLoading} />
 
-        {finalResult && (
-          <div className="results-section">
-            <SummaryView topic={finalResult.topic} summary={finalResult.summary} />
-            <div className="perspectives-grid">
-              {finalResult.perspectives && finalResult.perspectives.length > 0 ? (
-                finalResult.perspectives.map((p: any, index: number) => (
-                  <PerspectiveCard key={index} perspective={p} />
-                ))
-              ) : (
-                <p>No perspectives found.</p>
-              )}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center mt-10 text-slate-400">
+            <Spinner />
+            <p className="mt-4 text-lg">Analyzing perspectives... this may take a moment.</p>
+            <div className="mt-4 text-sm text-slate-500 w-full text-left">
+                {messages.map((msg, index) => (
+                    <p key={index}>{msg}</p>
+                ))}
             </div>
-            <FollowUpInput />
           </div>
         )}
+
+        {error && !isLoading && (
+          <div 
+            className="mt-6 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-md"
+            role="alert"
+          >
+            <p className="font-semibold">Analysis Failed</p>
+            <p>{error}</p>
+          </div>
+        )}
+
+        {analysis && !isLoading && !error && (
+          <div className="mt-8">
+            <AnalysisDisplay report={analysis} />
+          </div>
+        )}
+
+        {!analysis && !isLoading && !error && (
+            <div className="mt-10 text-center text-slate-500">
+                <p className="text-xl">Enter a topic above to begin your multi-perspective analysis.</p>
+                <p className="mt-2 text-sm">Example: "The future of artificial intelligence in healthcare"</p>
+            </div>
+        )}
       </main>
+
+      <footer className="w-full max-w-4xl text-center py-8 text-slate-500 text-sm">
+        <p>&copy; {new Date().getFullYear()} PolyView.</p>
+      </footer>
     </div>
   );
-}
+};
 
 export default App;

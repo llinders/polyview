@@ -17,7 +17,7 @@ class ExtractedPerspective(BaseModel):
     """Represents a single perspective found within an article."""
 
     perspective_summary: str = Field(
-        description="A concise summary of a distinct viewpoint expressed in the article. (e.g., 'Scientific Consensus', 'Techno-Optimist', "
+        description="A short descriptive name for the perspective (e.g., 'Scientific Consensus', 'Techno-Optimist', "
         "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
         "'Conservative', 'Liberal', etc.)"
     )
@@ -77,16 +77,27 @@ class FinalPerspective(BaseModel):
     """
 
     perspective_name: str = Field(
-        description="A short descriptive name for the perspective (e.g., 'Scientific Consensus', 'Techno-Optimist', "
-        "'Skeptical/Contrarian', 'Justice-Oriented', 'Economic Impact Concerns', 'Geopolitical Risks', "
-        "'Conservative', 'Liberal', etc.)"
+        description="A short descriptive name for the perspective (e.g., 'Supporters', 'Opposition', 'Scientific Consensus', 'Techno-Optimist', "
+        "'Skeptical/Contrarian', 'Justice-Oriented', 'Conservative', 'Liberal', etc.)"
     )
-    narrative: str
-    core_arguments: list[str]
-    supporting_evidence: list[str]
-    common_assumptions: list[str]
-    strengths: list[str]
-    weaknesses: list[str]
+    narrative: str = Field(
+        description="A detailed, neutral, and comprehensive analysis of the perspective."
+    )
+    core_arguments: list[str] = Field(
+        description="A list of the main claims, rationales, or evidence supporting this perspective, as described in the article."
+    )
+    supporting_evidence: list[str] = Field(
+        description="A list of specific pieces of evidence (e.g., stats, quotes, events) the article uses to support the arguments."
+    )
+    common_assumptions: list[str] = Field(
+        description="A list of assumptions the perspective relies on (e.g. 'poor people are lazy', 'people are inherently bad')."
+    )
+    strengths: list[str] = Field(
+        description="An analysis of strengths of the perspective and it's argumentation (e.g., well-supported by evidence, logically consistent.)"
+    )
+    weaknesses: list[str] = Field(
+        description="An analysis of weaknesses of the perspective and it's argumentation (e.g., relies on unstated assumptions, lacks evidence for key claims)"
+    )
 
 
 class State(TypedDict):
