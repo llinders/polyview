@@ -1,5 +1,5 @@
 
-import type { AnalysisReport } from './types';
+import type { AnalysisReport, Perspective } from './types';
 import mockData from '../mock-data.json';
 import { ANALYSIS_STEPS } from '../constants';
 
@@ -10,34 +10,64 @@ export interface AnalysisMessage {
   type: 'status' | 'partial_result' | 'final_result' | 'error' | 'end_of_stream';
   message?: string;
   step_name?: string;
-  data?: any;
+  data?: {
+    type?: 'summary' | 'perspective'; // New field to indicate data type
+    content?: string; // For summary
+    perspective?: Perspective; // For individual perspective
+    topic?: string; // For final result
+    overallSummary?: string; // For final result
+    perspectives?: Perspective[]; // For final result
+  };
 }
 
 interface AnalysisCallbacks {
   onAnalysisUpdate: (report: AnalysisReport) => void;
   onStatusUpdate: (message: AnalysisMessage) => void;
+  onPartialSummary: (summary: string) => void;
+  onPartialPerspective: (perspective: Perspective) => void;
   onError: (error: string) => void;
   onIsLoading: (loading: boolean) => void;
   onSessionId: (sessionId: string) => void;
 }
 
 const handleMockData = (callbacks: AnalysisCallbacks) => {
-  const { onStatusUpdate, onAnalysisUpdate, onIsLoading } = callbacks;
+  const { onStatusUpdate, onAnalysisUpdate, onIsLoading, onPartialSummary, onPartialPerspective } = callbacks;
 
-  let currentStep = 0;
-  const interval = setInterval(() => {
-    if (currentStep < ANALYSIS_STEPS.length) {
+  let currentStepIndex = 0;
+  let perspectiveIndex = 0;
+
+  const mockInterval = setInterval(() => {
+    if (currentStepIndex < ANALYSIS_STEPS.length) {
+      // Send status update for the completed step
       onStatusUpdate({
         type: 'status',
-        message: `Completed step: ${ANALYSIS_STEPS[currentStep]} `,
-        step_name: ANALYSIS_STEPS[currentStep],
+        message: `Completed step: ${ANALYSIS_STEPS[currentStepIndex]} `,
+        step_name: ANALYSIS_STEPS[currentStepIndex],
       });
-      currentStep++;
+      currentStepIndex++;
+    } else if (mockData.overallSummary && !onPartialSummary) { // Send summary if not already sent
+      onPartialSummary(mockData.overallSummary);
+      // Mark summary as sent (by setting onPartialSummary to null or similar, or use a flag)
+      // For simplicity in mock, we'll just proceed to perspectives
+    } else if (perspectiveIndex < mockData.perspectives.length) {
+      // Send individual perspectives
+      const mockPerspective = mockData.perspectives[perspectiveIndex];
+      onPartialPerspective({
+        id: mockPerspective.perspective_name,
+        title: mockPerspective.perspective_name,
+        summary: mockPerspective.narrative,
+        evidence: mockPerspective.supporting_evidence?.map((e: string, i: number) => ({ id: `${mockPerspective.perspective_name}-evidence-${i}`, statement: e })) || [],
+        strengths: mockPerspective.strengths || [],
+        weaknesses: mockPerspective.weaknesses || [],
+        rated_perspective_strength: mockPerspective.rated_perspective_strength || 0,
+      });
+      perspectiveIndex++;
     } else {
-      clearInterval(interval);
+      // All data sent, send final report and clear interval
+      clearInterval(mockInterval);
       const report: AnalysisReport = {
           topic: mockData.topic,
-          overallSummary: mockData.summary,
+          overallSummary: mockData.overallSummary,
           perspectives: mockData.perspectives.map((p: any) => ({
             id: p.perspective_name, // Or generate a unique ID
             title: p.perspective_name,
@@ -94,7 +124,7 @@ export const startAnalysis = async (topic: string, callbacks: AnalysisCallbacks)
 };
 
 export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbacks) => {
-    const { onStatusUpdate, onAnalysisUpdate, onError } = callbacks;
+    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective } = callbacks;
     const ws = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
 
     ws.onopen = () => {
@@ -106,10 +136,16 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
 
         if (msg.type === 'status') {
             onStatusUpdate(msg);
+        } else if (msg.type === 'partial_result') {
+            if (msg.data?.type === 'summary' && msg.data.content) {
+                onPartialSummary(msg.data.content);
+            } else if (msg.data?.type === 'perspective' && msg.data.perspective) {
+                onPartialPerspective(msg.data.perspective);
+            }
         } else if (msg.type === 'final_result') {
             const report: AnalysisReport = {
                 topic: msg.data.topic,
-                overallSummary: msg.data.summary,
+                overallSummary: msg.data.overallSummary,
                 perspectives: msg.data.perspectives.map((p: any) => ({
                     id: p.perspective_name, // Or generate a unique ID
                     title: p.perspective_name,

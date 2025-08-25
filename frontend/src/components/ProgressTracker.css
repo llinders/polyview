@@ -1,9 +1,9 @@
 
 .progress-tracker-container {
-    padding: 1.5rem;
+    padding: 1rem;
     background-color: rgba(15, 23, 42, 0.5);
     border-radius: 0.5rem;
-    margin-top: 2rem;
+    margin-top: 1rem;
 }
 
 .progress-steps {
@@ -16,10 +16,10 @@
 .progress-steps::before {
     content: '';
     position: absolute;
-    top: 12px; /* Align with the center of the icons */
-    left: 12px;
+    top: 10px; /* Align with the center of the icons */
+    left: 10px;
     width: 2px;
-    height: calc(100% - 24px);
+    height: calc(100% - 20px);
     background-color: #374151; /* dark-gray */
     z-index: 0;
 }
@@ -27,7 +27,7 @@
 .step {
     display: flex;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     position: relative;
     z-index: 1;
 }
@@ -37,9 +37,9 @@
 }
 
 .step-icon {
-    width: 24px;
-    height: 24px;
-    margin-right: 1rem;
+    width: 20px;
+    height: 20px;
+    margin-right: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -60,7 +60,7 @@
 }
 
 .step-label {
-    font-size: 1.125rem; /* text-lg */
+    font-size: 1rem; /* text-base */
     font-weight: 500;
     color: #94a3b8; /* slate-400 */
     transition: color 0.3s ease;
@@ -77,11 +77,11 @@
 }
 
 .step-stats {
-    font-size: 0.875rem; /* text-sm */
+    font-size: 0.75rem; /* text-xs */
     font-weight: 400;
     color: #64748b; /* slate-500 */
-    margin-left: 0.75rem;
+    margin-left: 0.5rem;
     background-color: #334155; /* slate-700 */
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.5rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.4rem;
 }
