@@ -25,13 +25,17 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ currentStep, i
               <div className="step-icon">
                 {isCompleted ? <CheckCircleIcon /> : isCurrent ? <Spinner /> : <CircleIcon />}
               </div>
-              <div className="step-label">
+              <div className="step-label flex flex-col">
                 <span className="step-name-text">{formatStepName(step)}</span>
-                {step === 'search_agent' && articlesFound !== undefined && (
-                  <span className="step-stats">Articles Found: {articlesFound}</span>
-                )}
-                 {step === 'search_agent' && iteration !== undefined && (
-                  <span className="step-stats">Iteration: {iteration}</span>
+                {step === 'search_agent' && (
+                  <div className="flex flex-col mt-1">
+                    {articlesFound !== undefined && (
+                      <span className="step-stats">Articles Found: {articlesFound}</span>
+                    )}
+                    {iteration !== undefined && (
+                      <span className="step-stats">Iteration: {iteration}</span>
+                    )}
+                  </div>
                 )}
               </div>
             </li>
