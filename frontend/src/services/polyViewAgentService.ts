@@ -1,4 +1,4 @@
-import type { AnalysisReport, Perspective } from './types';
+import type { AnalysisReport, Perspective, RawPerspectiveData } from './types';
 import mockData from '../mock-data.json';
 import { ANALYSIS_STEPS } from '../constants';
 
@@ -10,7 +10,7 @@ export interface AnalysisMessage {
   message?: string;
   step_name?: string;
   data?: {
-    type?: 'summary' | 'perspective' | 'cluster_count'; // New field to indicate data type
+    type?: 'summary' | 'perspective' | 'cluster_count';
     content?: string; // For summary
     perspective?: Perspective; // For individual perspective
     count?: number; // For cluster count
@@ -25,7 +25,7 @@ interface AnalysisCallbacks {
   onStatusUpdate: (message: AnalysisMessage) => void;
   onPartialSummary: (summary: string) => void;
   onPartialPerspective: (perspective: Perspective) => void;
-  onClusterCount: (count: number) => void; // New callback
+  onClusterCount: (count: number) => void;
   onError: (error: string) => void;
   onIsLoading: (loading: boolean) => void;
   onSessionId: (sessionId: string) => void;
@@ -40,14 +40,12 @@ const handleMockData = (callbacks: AnalysisCallbacks) => {
 
   const mockInterval = setInterval(() => {
     if (currentStepIndex < ANALYSIS_STEPS.length) {
-      // Send status update for the completed step
       onStatusUpdate({
         type: 'status',
         message: `Completed step: ${ANALYSIS_STEPS[currentStepIndex]} `,
         step_name: ANALYSIS_STEPS[currentStepIndex],
       });
 
-      // After clustering, send cluster count
       if (ANALYSIS_STEPS[currentStepIndex] === 'perspective_clustering') {
         onStatusUpdate({
           type: 'partial_result',
@@ -60,12 +58,10 @@ const handleMockData = (callbacks: AnalysisCallbacks) => {
 
       currentStepIndex++;
     } else if (!summarySent) {
-      // Send summary
       onPartialSummary(mockData.overallSummary);
       summarySent = true;
     } else if (perspectiveIndex < mockData.perspectives.length) {
-      // Send individual perspectives
-      const mockPerspective = mockData.perspectives[perspectiveIndex];
+      const mockPerspective: RawPerspectiveData = mockData.perspectives[perspectiveIndex];
       onPartialPerspective({
         id: mockPerspective.perspective_name,
         title: mockPerspective.perspective_name,
@@ -77,12 +73,11 @@ const handleMockData = (callbacks: AnalysisCallbacks) => {
       });
       perspectiveIndex++;
     } else {
-      // All data sent, send final report and clear interval
       clearInterval(mockInterval);
       const report: AnalysisReport = {
           topic: mockData.topic,
           overallSummary: mockData.overallSummary,
-          perspectives: mockData.perspectives.map((p: any) => ({
+          perspectives: mockData.perspectives.map((p: RawPerspectiveData) => ({
             id: p.perspective_name, // Or generate a unique ID
             title: p.perspective_name,
             summary: p.narrative,
@@ -142,7 +137,7 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
     const ws = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
 
     ws.onopen = () => {
-        // Optional: send a message to confirm connection, but not a step update
+
     };
 
     ws.onmessage = (event) => {
@@ -159,18 +154,22 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
                 onClusterCount(msg.data.count);
             }
         } else if (msg.type === 'final_result') {
+            if (!msg.data) {
+                onError("Final result data is missing.");
+                return;
+            }
             const report: AnalysisReport = {
-                topic: msg.data.topic,
-                overallSummary: msg.data.overallSummary,
-                perspectives: msg.data.perspectives.map((p: any) => ({
-                    id: p.perspective_name, // Or generate a unique ID
+                topic: msg.data.topic || '',
+                overallSummary: msg.data.overallSummary || '',
+                perspectives: msg.data.perspectives?.map((p: RawPerspectiveData) => ({
+                    id: p.perspective_name,
                     title: p.perspective_name,
                     summary: p.narrative,
                     evidence: p.supporting_evidence?.map((e: string, i: number) => ({ id: `${p.perspective_name}-evidence-${i}`, statement: e })) || [],
                     strengths: p.strengths || [],
                     weaknesses: p.weaknesses || [],
                     rated_perspective_strength: p.rated_perspective_strength || 0,
-                })),
+                })) || [],
                 timestamp: new Date().toISOString(),
             };
             onAnalysisUpdate(report);

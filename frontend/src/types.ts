@@ -21,3 +21,12 @@ export interface AnalysisReport {
   timestamp: string;
   rawResponse?: string; // For debugging
 }
+
+export interface RawPerspectiveData {
+  perspective_name: string;
+  narrative: string;
+  supporting_evidence?: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  rated_perspective_strength?: number;
+}

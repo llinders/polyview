@@ -32,7 +32,6 @@ async def run_analysis_workflow(session_id: str, topic: str):
             {"type": "status", "message": f"Starting analysis for topic: '{topic}'"}
         )
 
-        # Initial state for the workflow
         initial_state = {"topic": topic, "iteration": 0}
 
         # Stream the workflow execution
@@ -53,6 +52,34 @@ async def run_analysis_workflow(session_id: str, topic: str):
                     "step_name": current_node,
                 }
             )
+
+            if current_node == "perspective_identification":
+                if "identified_perspectives" in node_data:
+                    logger.debug(
+                        f"Sending raw perspective count update: {len(node_data['identified_perspectives'])}"
+                    )
+                    await queue.put(
+                        {
+                            "type": "status",
+                            "message": f"Identified {len(node_data['identified_perspectives'])} raw perspectives.",
+                            "step_name": current_node,
+                        }
+                    )
+
+            if current_node == "perspective_clustering":
+                if "clustered_perspectives" in node_data:
+                    logger.debug(
+                        f"Sending cluster count update: {len(node_data['clustered_perspectives'])}"
+                    )
+                    await queue.put(
+                        {
+                            "type": "partial_result",
+                            "data": {
+                                "type": "cluster_count",
+                                "count": len(node_data["clustered_perspectives"]),
+                            },
+                        }
+                    )
 
             if "iteration" in node_data:
                 logger.debug(
@@ -132,7 +159,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
     try:
         while True:
-            # Wait for messages from the analysis workflow
             message = await queue.get()
             if message["type"] == "end_of_stream":
                 break
