@@ -7,10 +7,22 @@ def setup_logging():
     Sets up the application-wide logging configuration.
     """
     logger = logging.getLogger()
-    logger.setLevel(os.environ.get("LOG_LEVEL", "WARNING").upper())
-    logging.getLogger("polyview").setLevel(
-        os.environ.get("POLYVIEW_LOG_LEVEL", "DEBUG").upper()
-    )
+    logger.setLevel(os.environ.get("LOG_LEVEL", logging.WARNING).upper())
+
+    polyview_logger = logging.getLogger("polyview")
+    polyview_logger.setLevel(os.environ.get("POLYVIEW_LOG_LEVEL", logging.INFO).upper())
+
+    # Parse and apply module-specific log levels from the environment variable
+    module_log_levels_str = os.environ.get("POLYVIEW_MODULE_LOG_LEVELS")
+    if module_log_levels_str:
+        for entry in module_log_levels_str.split(","):
+            try:
+                module_name, level_name = entry.strip().split(":")
+                logging.getLogger(module_name).setLevel(level_name.upper())
+            except ValueError:
+                logger.warning(
+                    f"Invalid POLYVIEW_MODULE_LOG_LEVELS entry: {entry}. Expected format 'module:LEVEL'."
+                )
 
     # Prevent adding multiple handlers if setup_logging is called more than once
     if not logger.handlers:
