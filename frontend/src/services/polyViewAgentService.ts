@@ -6,9 +6,10 @@ const API_BASE_URL = 'http://localhost:8000/api/v1';
 const WS_BASE_URL = 'ws://localhost:8000/api/v1/ws';
 
 export interface AnalysisMessage {
-  type: 'status' | 'partial_result' | 'final_result' | 'error' | 'end_of_stream';
+  type: 'status' | 'partial_result' | 'final_result' | 'error' | 'end_of_stream' | 'summary_token';
   message?: string;
   step_name?: string;
+  token?: string;
   data?: {
     type?: 'summary' | 'perspective' | 'cluster_count';
     content?: string; // For summary
@@ -24,6 +25,7 @@ interface AnalysisCallbacks {
   onAnalysisUpdate: (report: AnalysisReport) => void;
   onStatusUpdate: (message: AnalysisMessage) => void;
   onPartialSummary: (summary: string) => void;
+  onSummaryToken: (token: string) => void;
   onPartialPerspective: (perspective: Perspective) => void;
   onClusterCount: (count: number) => void;
   onError: (error: string) => void;
@@ -133,7 +135,7 @@ export const startAnalysis = async (topic: string, callbacks: AnalysisCallbacks)
 };
 
 export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbacks) => {
-    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective, onClusterCount } = callbacks;
+    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective, onClusterCount, onSummaryToken } = callbacks;
     const ws = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
 
     ws.onopen = () => {
@@ -145,6 +147,10 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
 
         if (msg.type === 'status') {
             onStatusUpdate(msg);
+        } else if (msg.type === 'summary_token') {
+            if (msg.token) {
+                onSummaryToken(msg.token);
+            }
         } else if (msg.type === 'partial_result') {
             if (msg.data?.type === 'summary' && msg.data.content) {
                 onPartialSummary(msg.data.content);
@@ -181,12 +187,13 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
     };
 
     ws.onclose = () => {
-        // WebSocket closed
+        onIsLoading(false);
     };
 
     ws.onerror = (event) => {
         console.error("WebSocket error:", event);
         onError('WebSocket connection error.');
+        onIsLoading(false);
     };
 
     return ws;

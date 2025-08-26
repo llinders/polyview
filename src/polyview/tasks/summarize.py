@@ -70,5 +70,6 @@ async def summarize_node(state: State):
 
     chain = prompt_template | llm | StrOutputParser()
 
-    async for token in chain.astream({"perspectives": state.get("final_perspectives")}):
-        yield token
+    logger.info("Starting summarization")
+    summary = await chain.ainvoke({"perspectives": state.get("final_perspectives")})
+    return {"summary": summary}
