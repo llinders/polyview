@@ -93,10 +93,10 @@ class FinalPerspective(BaseModel):
         description="A list of assumptions the perspective relies on (e.g. 'poor people are lazy', 'people are inherently bad')."
     )
     strengths: list[str] = Field(
-        description="An analysis of strengths of the perspective and it's argumentation (e.g., well-supported by evidence, logically consistent)"
+        description="An analysis of strengths of the perspective and its argumentation (e.g., well-supported by evidence, logically consistent)"
     )
     weaknesses: list[str] = Field(
-        description="An analysis of weaknesses of the perspective and it's argumentation (e.g., relies on unstated assumptions, lacks evidence for key claims)"
+        description="An analysis of weaknesses of the perspective and its argumentation (e.g., relies on unstated assumptions, lacks evidence for key claims)"
     )
     rated_perspective_strength: int = Field(
         description="A rating of the strength of the perspective (1-5, where 1 is the weakest and 5 is the strongest). Based on the strengths, weaknesses, and supporting evidence of the perspective."
