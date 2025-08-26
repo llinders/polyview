@@ -16,11 +16,11 @@
 .progress-steps::before {
     content: '';
     position: absolute;
-    top: 10px; /* Align with the center of the icons */
+    top: 10px;
     left: 10px;
     width: 2px;
     height: calc(100% - 20px);
-    background-color: #374151; /* dark-gray */
+    background-color: #374151;
     z-index: 0;
 }
 

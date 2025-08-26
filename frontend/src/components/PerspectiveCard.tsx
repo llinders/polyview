@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './CollapsibleSection.css';
 import type { Perspective } from '../types';
 import StarIcon from './icons/StarIcon';
 
@@ -22,13 +23,13 @@ export const PerspectiveCard: React.FC<{ perspective: Perspective | null }> = ({
           <span>{title}</span>
           <span className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>►</span>
         </button>
-        {isExpanded && (
+        <div className={`collapsible-content ${isExpanded ? 'open' : ''}`}>
           <ul className="mt-2 pl-5 border-l-2 border-slate-700 text-slate-400 space-y-2 text-sm">
             {items.map((item, index) => (
               <li key={index}>{typeof item === 'string' ? item : item.statement}</li>
             ))}
           </ul>
-        )}
+        </div>
       </div>
     );
   };
