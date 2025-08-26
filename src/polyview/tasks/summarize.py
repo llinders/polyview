@@ -8,7 +8,7 @@ from polyview.core.state import State
 logger = get_logger(__name__)
 
 
-def summarize_node(state: State):
+async def summarize_node(state: State):
     """
     Summarizes content into a neutral and balanced text for the user to read,
     based on different perspectives and core arguments
@@ -70,7 +70,5 @@ def summarize_node(state: State):
 
     chain = prompt_template | llm | StrOutputParser()
 
-    summary_result = chain.invoke({"perspectives": state.get("final_perspectives")})
-
-    logger.info(f"Summary result: {summary_result}")
-    return {"summary": summary_result}
+    async for token in chain.astream({"perspectives": state.get("final_perspectives")}):
+        yield token

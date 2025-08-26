@@ -2,11 +2,13 @@ import asyncio
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
 from starlette.status import WS_1008_POLICY_VIOLATION
 
-from polyview.api.models import AnalysisRequest, AnalysisResponse
+from polyview.api.models import AnalysisRequest, AnalysisResponse, SummarizeTestRequest
 from polyview.core.logging import get_logger
 from polyview.workflows.research_workflow import graph as research_workflow_graph
+from polyview.workflows.summarization_workflow import summarization_workflow
 
 logger = get_logger(__name__)
 
@@ -112,15 +114,25 @@ async def run_analysis_workflow(session_id: str, topic: str):
                     }
                 )
 
-            # TODO: Possibly add more specific in between updates here such as summaries to display partial results
+        await queue.put(
+            {
+                "type": "status",
+                "message": "Analysis complete! Starting summarization...",
+            }
+        )
 
-        await queue.put({"type": "status", "message": "Analysis complete!"})
+        # Stream the summary
+        summary_result = ""
+        async for token in summarization_workflow.astream(final_state):
+            summary_result += token
+            await queue.put({"type": "summary_token", "token": token})
+
+        final_state["summary"] = summary_result
         await queue.put(
             {
                 "type": "final_result",
                 "data": {
                     "topic": topic,
-                    "summary": final_state.get("summary", "No summary available."),
                     "perspectives": [
                         p.model_dump()
                         for p in final_state.get("final_perspectives", [])
@@ -176,3 +188,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
             del session_message_queues[session_id]
             del active_connections[session_id]
         await websocket.close()
+
+
+@router.post("/test/summarize")
+async def test_summarize(request: SummarizeTestRequest):
+    async def stream_summary():
+        async for token in summarization_workflow.astream(
+            {"final_perspectives": request.final_perspectives}
+        ):
+            yield token
+
+    return StreamingResponse(stream_summary(), media_type="text/plain")
