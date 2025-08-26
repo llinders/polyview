@@ -20,9 +20,10 @@ class ChatGoogleGenerativeAIWithDelayedRetry(ChatGoogleGenerativeAI):
     async def ainvoke(self, *args, **kwargs):
         return await super().ainvoke(*args, **kwargs)
 
-    @gemini_api_delayed_retry()
     async def astream(self, *args, **kwargs):
-        return await super().astream(*args, **kwargs)
+        # @gemini_api_delayed_retry is not compatible with async generators, so it has been removed.
+        async for chunk in super().astream(*args, **kwargs):
+            yield chunk
 
     @gemini_api_delayed_retry()
     async def abatch(self, *args, **kwargs):

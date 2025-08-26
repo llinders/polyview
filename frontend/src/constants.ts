@@ -9,6 +9,7 @@ export const ANALYSIS_STEPS = [
   'perspective_identification',
   'perspective_clustering',
   'perspective_synthesis',
+  'summary_generation',
 ];
 
 export const formatStepName = (stepName: string) => {

@@ -27,7 +27,6 @@ const App: React.FC = () => {
     setOverallSummary(undefined);
     setPerspectives([]);
     setExpectedPerspectiveCount(undefined);
-    setIsLoading(false);
     setError(null);
     setSessionId(null);
     setCurrentStep(0);
@@ -58,6 +57,10 @@ const App: React.FC = () => {
 
   const handlePartialSummary = (summary: string) => {
     setOverallSummary(summary);
+  };
+
+  const handleSummaryToken = (token: string) => {
+    setOverallSummary(prev => (prev || "") + token);
   };
 
   const handlePartialPerspective = (newPerspective: Perspective) => {
@@ -93,7 +96,7 @@ const App: React.FC = () => {
             setIsLoading(false);
             setExpectedPerspectiveCount(report.perspectives.length);
         },
-        onPartialSummary: handlePartialSummary,
+        onSummaryToken: handleSummaryToken,
         onPartialPerspective: handlePartialPerspective,
         onClusterCount: handleClusterCount,
         onError: (error: string) => {
@@ -128,7 +131,7 @@ const App: React.FC = () => {
           setExpectedPerspectiveCount(report.perspectives.length);
         },
         onStatusUpdate: handleStatusUpdate,
-        onPartialSummary: handlePartialSummary,
+        onSummaryToken: handleSummaryToken,
         onPartialPerspective: handlePartialPerspective,
         onClusterCount: handleClusterCount,
         onError: (error: string) => {

@@ -121,9 +121,11 @@ async def run_analysis_workflow(session_id: str, topic: str):
             }
         )
 
-        # Stream the summary
         summary_result = ""
-        async for token in summarization_workflow.astream(final_state):
+        async for chunk, _metadata in summarization_workflow.astream(
+            final_state, stream_mode="messages"
+        ):
+            token = chunk.content
             summary_result += token
             await queue.put({"type": "summary_token", "token": token})
 
@@ -193,9 +195,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 @router.post("/test/summarize")
 async def test_summarize(request: SummarizeTestRequest):
     async def stream_summary():
-        async for token in summarization_workflow.astream(
-            {"final_perspectives": request.final_perspectives}
+        async for chunk, _metadata in summarization_workflow.astream(
+            {"final_perspectives": request.final_perspectives}, stream_mode="messages"
         ):
-            yield token
+            if hasattr(chunk, "content"):
+                logger.debug(f"Received summary chunk: {chunk.content}")
+                yield chunk.content
+            elif isinstance(chunk, dict) and "summary" in chunk:
+                # This is likely the final state object
+                logger.debug(f"Received final summary state: {chunk}")
+                yield chunk["summary"]
 
     return StreamingResponse(stream_summary(), media_type="text/plain")
