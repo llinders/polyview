@@ -33,12 +33,17 @@ interface AnalysisCallbacks {
   onSessionId: (sessionId: string) => void;
 }
 
+interface SummarizeCallbacks {
+  onSummaryToken: (token: string) => void;
+  onError: (error: string) => void;
+  onIsLoading: (loading: boolean) => void;
+}
+
 const handleMockData = (callbacks: AnalysisCallbacks) => {
   const { onStatusUpdate, onAnalysisUpdate, onIsLoading, onPartialSummary, onPartialPerspective, onClusterCount } = callbacks;
 
   let currentStepIndex = 0;
   let perspectiveIndex = 0;
-  let summarySent = false;
 
   const mockInterval = setInterval(() => {
     if (currentStepIndex < ANALYSIS_STEPS.length) {
@@ -59,9 +64,6 @@ const handleMockData = (callbacks: AnalysisCallbacks) => {
       }
 
       currentStepIndex++;
-    } else if (!summarySent) {
-      onPartialSummary(mockData.overallSummary);
-      summarySent = true;
     } else if (perspectiveIndex < mockData.perspectives.length) {
       const mockPerspective: RawPerspectiveData = mockData.perspectives[perspectiveIndex];
       onPartialPerspective({
@@ -78,9 +80,9 @@ const handleMockData = (callbacks: AnalysisCallbacks) => {
       clearInterval(mockInterval);
       const report: AnalysisReport = {
           topic: mockData.topic,
-          overallSummary: mockData.overallSummary,
+          overallSummary: mockData.summary,
           perspectives: mockData.perspectives.map((p: RawPerspectiveData) => ({
-            id: p.perspective_name, // Or generate a unique ID
+            id: p.perspective_name,
             title: p.perspective_name,
             summary: p.narrative,
             evidence: p.supporting_evidence?.map((e: string, i: number) => ({ id: `${p.perspective_name}-evidence-${i}`, statement: e })) || [],
@@ -135,7 +137,7 @@ export const startAnalysis = async (topic: string, callbacks: AnalysisCallbacks)
 };
 
 export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbacks) => {
-    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective, onClusterCount, onSummaryToken } = callbacks;
+    const { onStatusUpdate, onAnalysisUpdate, onError, onPartialSummary, onPartialPerspective, onClusterCount, onSummaryToken, onIsLoading } = callbacks;
     const ws = new WebSocket(`${WS_BASE_URL}/${sessionId}`);
 
     ws.onopen = () => {
@@ -197,4 +199,64 @@ export const connectToWebSocket = (sessionId: string, callbacks: AnalysisCallbac
     };
 
     return ws;
+};
+
+export const callSummarizeEndpoint = async (perspectives: Perspective[], callbacks: SummarizeCallbacks) => {
+  const { onError, onIsLoading, onSummaryToken } = callbacks;
+  try {
+    onIsLoading(true);
+    const response = await fetch(`${API_BASE_URL}/summarize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ perspectives }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.detail) { // Assuming FastAPI-like error structure
+          errorMessage = `API Error: ${errorData.detail}`;
+        } else if (errorData && errorData.message) { // Common error message field
+          errorMessage = `API Error: ${errorData.message}`;
+        } else {
+          // If no specific 'detail' or 'message' field, stringify the whole errorData object
+          errorMessage = `API Error: ${JSON.stringify(errorData)}`;
+        }
+      } catch (jsonError) {
+        errorMessage = `HTTP error! status: ${response.status} - ${response.statusText || 'Unknown error'}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("Failed to get readable stream from summarize endpoint.");
+    }
+
+    const decoder = new TextDecoder();
+    let done = false;
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      const chunk = decoder.decode(value, { stream: true });
+      if (chunk) {
+        onSummaryToken(chunk);
+      }
+    }
+  } catch (err) {
+    console.error("Summarization error:", err);
+    if (err instanceof Error) {
+        console.error("Summarization error details:", JSON.stringify(err, null, 2));
+        onError(`Failed to get summary: ${err.message}`);
+    } else {
+        console.error("Summarization error object:", err);
+        onError("An unknown error occurred during summarization.");
+    }
+  } finally {
+    onIsLoading(false);
+  }
 };

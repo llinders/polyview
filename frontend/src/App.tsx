@@ -91,10 +91,17 @@ const App: React.FC = () => {
       const callbacks = {
         onStatusUpdate: handleStatusUpdate,
         onAnalysisUpdate: (report: AnalysisReport) => {
-            setOverallSummary(report.overallSummary);
             setPerspectives(report.perspectives);
-            setIsLoading(false);
             setExpectedPerspectiveCount(report.perspectives.length);
+            // const summaryCallbacks: SummarizeCallbacks = {
+            //     onSummaryToken: handleSummaryToken,
+            //     onError: (error: string) => {
+            //         setError(error);
+            //         setIsLoading(false);
+            //     },
+            //     onIsLoading: setIsLoading,
+            // };
+            // callSummarizeEndpoint(report.perspectives, summaryCallbacks);
         },
         onSummaryToken: handleSummaryToken,
         onPartialPerspective: handlePartialPerspective,
@@ -125,10 +132,9 @@ const App: React.FC = () => {
 
     const callbacks = {
         onAnalysisUpdate: (report: AnalysisReport) => {
-          setOverallSummary(report.overallSummary);
           setPerspectives(report.perspectives);
-          setIsLoading(false);
           setExpectedPerspectiveCount(report.perspectives.length);
+          // callSummarizeEndpoint(report.perspectives, callbacks);
         },
         onStatusUpdate: handleStatusUpdate,
         onSummaryToken: handleSummaryToken,

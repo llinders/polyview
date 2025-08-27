@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from starlette.status import WS_1008_POLICY_VIOLATION
 
-from polyview.api.models import AnalysisRequest, AnalysisResponse, SummarizeTestRequest
+from polyview.api.models import AnalysisRequest, AnalysisResponse, SummarizeRequest
 from polyview.core.logging import get_logger
 from polyview.workflows.research_workflow import graph as research_workflow_graph
 from polyview.workflows.summarization_workflow import summarization_workflow
@@ -21,7 +21,19 @@ session_message_queues: dict[str, asyncio.Queue] = {}
 
 async def run_analysis_workflow(session_id: str, topic: str):
     """
-    Runs the LangGraph analysis workflow and sends updates via WebSocket.
+    Runs the analysis workflow for the given topic and session. This function orchestrates
+    the execution of a research workflow, streams its progress updates over a queue, and
+    compiles the final perspective results. It handles workflow stages, progress reporting,
+    and manages streaming of intermediate results to the message queue for downstream
+    processing.
+
+    :param session_id: A string representing the unique identifier for the session.
+                       This is used to fetch the associated message queue.
+    :type session_id: str
+    :param topic: A string specifying the topic for which the analysis workflow is
+                  performed.
+    :type topic: str
+    :return: None
     """
     queue = session_message_queues.get(session_id)
     if not queue:
@@ -162,6 +174,19 @@ async def analyze_topic(request: AnalysisRequest, background_tasks: BackgroundTa
 
 @router.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
+    """
+    Handle WebSocket connections for a specified session. This endpoint allows clients
+    to establish a WebSocket connection and receive messages related to a specific
+    session. It manages the lifecycle of the WebSocket connection, including handling
+    disconnections and cleaning up resources.
+
+    :param websocket: The WebSocket connection instance.
+    :type websocket: WebSocket
+    :param session_id: The unique identifier for the session the WebSocket
+        connection is associated with.
+    :type session_id: str
+    :return: None
+    """
     await websocket.accept()
     if session_id not in active_connections:
         # If session_id is not known, close connection or handle error
@@ -192,18 +217,43 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         await websocket.close()
 
 
-@router.post("/test/summarize")
-async def test_summarize(request: SummarizeTestRequest):
+@router.post("/summarize")
+async def summarize(request: SummarizeRequest):
+    """
+    Handles the HTTP POST request generating a summary form final perspective data by streaming the
+    output in real-time. This function utilizes the `summarization_workflow`
+    to process the input data and streams the summary chunks or final summarization
+    state.
+
+    The streamed data is returned to the client as plain text.
+
+    :param request: Data payload containing the summarization-related information.
+        Specifically includes the final perspectives required for the summarization
+        process.
+    :type request: SummarizeRequest
+
+    :return: A streaming response containing summary chunks or the final
+        summarization result in plain text format.
+    :rtype: StreamingResponse
+    """
+
     async def stream_summary():
-        async for chunk, _metadata in summarization_workflow.astream(
-            {"final_perspectives": request.final_perspectives}, stream_mode="messages"
-        ):
-            if hasattr(chunk, "content"):
-                logger.debug(f"Received summary chunk: {chunk.content}")
-                yield chunk.content
-            elif isinstance(chunk, dict) and "summary" in chunk:
-                # This is likely the final state object
-                logger.debug(f"Received final summary state: {chunk}")
-                yield chunk["summary"]
+        try:
+            async for chunk, _metadata in summarization_workflow.astream(
+                {"final_perspectives": request.final_perspectives},
+                stream_mode="messages",
+            ):
+                if hasattr(chunk, "content"):
+                    logger.debug(f"Received summary chunk: {chunk.content}")
+                    yield chunk.content
+                elif isinstance(chunk, dict) and "summary" in chunk:
+                    logger.debug(f"Received final summary state: {chunk}")
+                    yield chunk["summary"]
+        except Exception as e:
+            logger.error(
+                f"Error during summarization for request: {request.model_dump_json()}"
+            )
+            logger.error(f"Error: {e}")
+            raise
 
     return StreamingResponse(stream_summary(), media_type="text/plain")

@@ -6,7 +6,7 @@ from polyview.api.routes import analysis
 app = FastAPI(
     title="PolyView API",
     description="API for PolyView, a news analysis application providing multiple perspectives.",
-    version="0.2.0",
+    version="1.1.0",
 )
 
 # CORS configuration
