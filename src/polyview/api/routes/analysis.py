@@ -220,7 +220,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 @router.post("/summarize")
 async def summarize(request: SummarizeRequest):
     """
-    Handles the HTTP POST request generating a summary form final perspective data by streaming the
+    Handles the HTTP POST request generating a summary from final perspective data by streaming the
     output in real-time. This function utilizes the `summarization_workflow`
     to process the input data and streams the summary chunks or final summarization
     state.
