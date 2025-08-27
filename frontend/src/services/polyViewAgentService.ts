@@ -40,7 +40,7 @@ interface SummarizeCallbacks {
 }
 
 const handleMockData = (callbacks: AnalysisCallbacks) => {
-  const { onStatusUpdate, onAnalysisUpdate, onIsLoading, onPartialSummary, onPartialPerspective, onClusterCount } = callbacks;
+  const { onStatusUpdate, onAnalysisUpdate, onIsLoading, onPartialPerspective } = callbacks;
 
   let currentStepIndex = 0;
   let perspectiveIndex = 0;
@@ -210,7 +210,7 @@ export const callSummarizeEndpoint = async (perspectives: Perspective[], callbac
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ perspectives }),
+      body: JSON.stringify({ final_perspectives: perspectives }),
     });
 
     if (!response.ok) {
