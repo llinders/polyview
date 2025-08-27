@@ -47,7 +47,7 @@ You can then visit https://localhost:5173 to use the webapp.
 
 ## Architecture Overview
 ### 1. Frontend (React + TypeScript)
-A responsive user interface built with **React** and **TypeScript**, using **Vite**.
+A responsive user interface built with React and TypeScript, using Vite.
 -   Communicates with the backend via a REST API to start the analysis and a WebSocket for real-time progress updates.
 
 ### 2. Backend (Python + FastAPI)
