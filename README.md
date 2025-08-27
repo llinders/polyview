@@ -23,18 +23,18 @@ https://github.com/user-attachments/assets/cfe15398-d9ea-40b5-a909-e23a23fe756b
    ```
 4. Setup pre-commit hooks:
    ```bash
-   poetry pre-commit install
+   poetry run pre-commit install
    ```
 
 ## Local setup & usage
 Follow these steps to set up the environment and run both the FastAPI backend and the React frontend locally.
 **FastAPI backend**
 ```bash
-poetry python src/polyview/main.py
+poetry run python src/polyview/main.py
 ```
 or run the following in a shell: 
 ```bash
-poetry uvicorn polyview.api.main:app --host 0.0.0.0 --port 8000
+poetry run uvicorn polyview.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 **React frontend**
