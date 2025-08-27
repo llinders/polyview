@@ -3,8 +3,6 @@ export const APP_TITLE = 'PolyView';
 export const APP_SUBTITLE = 'Gaining clarity through diverse perspectives.';
 
 export const ANALYSIS_STEPS = [
-  'topic_refinement',
-  'query_generation',
   'search_agent',
   'perspective_identification',
   'perspective_clustering',

@@ -11,5 +11,5 @@ class AnalysisResponse(BaseModel):
     session_id: str
 
 
-class SummarizeTestRequest(BaseModel):
+class SummarizeRequest(BaseModel):
     final_perspectives: list[dict[str, Any]]
