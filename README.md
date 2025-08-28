@@ -59,7 +59,7 @@ The "brain" of the application, where the analysis takes place. It is built with
 -   Features an autonomous search agent that gathers and filters information from the web.
 -   Uses a stateful graph to orchestrate a series of specialized tasks that perform perspective identification, clustering, and synthesis.
 <br>
-![LangGraph Workflow](assets/langgraph-workflow.png)
+<img width="704" height="324" alt="langgraph-workflow" src="https://github.com/user-attachments/assets/57f44563-c8b1-41ac-b8ff-029f1152205f" />
 
 ### High-Level Data Flow
 1.  The **Frontend** sends a topic to the **Backend**'s REST API.
