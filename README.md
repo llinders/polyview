@@ -21,7 +21,12 @@ https://github.com/user-attachments/assets/cfe15398-d9ea-40b5-a909-e23a23fe756b
    cd frontend
    npm install
    ```
-4. Setup pre-commit hooks:
+4. Copy the example .env file and configure it with your API keys:
+   ```bash
+   cp .env.example .env 
+   ```
+5. (Optional, but required for development)<br>
+   Setup pre-commit hooks:
    ```bash
    poetry run pre-commit install
    ```

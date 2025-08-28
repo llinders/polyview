@@ -13,7 +13,7 @@ def setup_logging():
     polyview_logger.setLevel(os.environ.get("POLYVIEW_LOG_LEVEL", logging.INFO).upper())
 
     # Parse and apply module-specific log levels from the environment variable
-    module_log_levels_str = os.environ.get("POLYVIEW_MODULE_LOG_LEVELS")
+    module_log_levels_str = os.environ.get("MODULE_LOG_LEVELS")
     if module_log_levels_str:
         for entry in module_log_levels_str.split(","):
             try:
@@ -21,7 +21,7 @@ def setup_logging():
                 logging.getLogger(module_name).setLevel(level_name.upper())
             except ValueError:
                 logger.warning(
-                    f"Invalid POLYVIEW_MODULE_LOG_LEVELS entry: {entry}. Expected format 'module:LEVEL'."
+                    f"Invalid MODULE_LOG_LEVELS entry: {entry}. Expected format 'module:LEVEL'."
                 )
 
     # Prevent adding multiple handlers if setup_logging is called more than once
