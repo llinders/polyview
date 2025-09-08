@@ -24,9 +24,9 @@ dependencies = [
 ]
 
 [tool.poetry.group.dev.dependencies]
-langgraph-cli = { extras = ["inmem"], version = "^0.3.8" }
-pytest = "^8.4.1"
-ruff = "^0.12.10"
+langgraph-cli = { extras = ["inmem"], version = "^0.4.2" }
+pytest = "^8.4.2"
+ruff = "^0.12.12"
 pre-commit = "^4.3.0"
 
 
